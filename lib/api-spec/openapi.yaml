@@ -3,20 +3,40 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: WealthOS Personal Finance Dashboard API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: transactions
+    description: Income and expense transactions
+  - name: savings
+    description: Savings records
+  - name: goals
+    description: Financial goals
+  - name: investments
+    description: Investment portfolio
+  - name: assets
+    description: Asset records
+  - name: liabilities
+    description: Liability records
+  - name: budgets
+    description: Monthly budgets
+  - name: settings
+    description: App settings
+  - name: dashboard
+    description: Dashboard summary and insights
+  - name: reports
+    description: Monthly financial reports
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +44,716 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  # ─── TRANSACTIONS ────────────────────────────────────────────────────────────
+  /transactions:
+    get:
+      operationId: listTransactions
+      tags: [transactions]
+      summary: List all transactions
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [income, expense]
+        - name: month
+          in: query
+          schema:
+            type: string
+        - name: year
+          in: query
+          schema:
+            type: string
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of transactions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Transaction"
+    post:
+      operationId: createTransaction
+      tags: [transactions]
+      summary: Create a transaction
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+
+  /transactions/{id}:
+    get:
+      operationId: getTransaction
+      tags: [transactions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Transaction
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+        "404":
+          description: Not found
+    patch:
+      operationId: updateTransaction
+      tags: [transactions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TransactionUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Transaction"
+    delete:
+      operationId: deleteTransaction
+      tags: [transactions]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── SAVINGS ─────────────────────────────────────────────────────────────────
+  /savings:
+    get:
+      operationId: listSavings
+      tags: [savings]
+      summary: List all savings records
+      responses:
+        "200":
+          description: List of savings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SavingsRecord"
+    post:
+      operationId: createSavings
+      tags: [savings]
+      summary: Create a savings record
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavingsInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavingsRecord"
+
+  /savings/{id}:
+    patch:
+      operationId: updateSavings
+      tags: [savings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SavingsUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavingsRecord"
+    delete:
+      operationId: deleteSavings
+      tags: [savings]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── GOALS ───────────────────────────────────────────────────────────────────
+  /goals:
+    get:
+      operationId: listGoals
+      tags: [goals]
+      summary: List all financial goals
+      responses:
+        "200":
+          description: List of goals
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Goal"
+    post:
+      operationId: createGoal
+      tags: [goals]
+      summary: Create a financial goal
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+
+  /goals/{id}:
+    patch:
+      operationId: updateGoal
+      tags: [goals]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/GoalUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Goal"
+    delete:
+      operationId: deleteGoal
+      tags: [goals]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── INVESTMENTS ──────────────────────────────────────────────────────────────
+  /investments:
+    get:
+      operationId: listInvestments
+      tags: [investments]
+      summary: List all investments
+      responses:
+        "200":
+          description: List of investments
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Investment"
+    post:
+      operationId: createInvestment
+      tags: [investments]
+      summary: Add an investment
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvestmentInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Investment"
+
+  /investments/{id}:
+    patch:
+      operationId: updateInvestment
+      tags: [investments]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/InvestmentUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Investment"
+    delete:
+      operationId: deleteInvestment
+      tags: [investments]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── ASSETS ───────────────────────────────────────────────────────────────────
+  /assets:
+    get:
+      operationId: listAssets
+      tags: [assets]
+      summary: List all assets
+      responses:
+        "200":
+          description: List of assets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Asset"
+    post:
+      operationId: createAsset
+      tags: [assets]
+      summary: Add an asset
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssetInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+
+  /assets/{id}:
+    patch:
+      operationId: updateAsset
+      tags: [assets]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AssetUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Asset"
+    delete:
+      operationId: deleteAsset
+      tags: [assets]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── LIABILITIES ─────────────────────────────────────────────────────────────
+  /liabilities:
+    get:
+      operationId: listLiabilities
+      tags: [liabilities]
+      summary: List all liabilities
+      responses:
+        "200":
+          description: List of liabilities
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Liability"
+    post:
+      operationId: createLiability
+      tags: [liabilities]
+      summary: Add a liability
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LiabilityInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Liability"
+
+  /liabilities/{id}:
+    patch:
+      operationId: updateLiability
+      tags: [liabilities]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/LiabilityUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Liability"
+    delete:
+      operationId: deleteLiability
+      tags: [liabilities]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── BUDGETS ─────────────────────────────────────────────────────────────────
+  /budgets:
+    get:
+      operationId: listBudgets
+      tags: [budgets]
+      summary: List all budgets
+      parameters:
+        - name: month
+          in: query
+          schema:
+            type: string
+        - name: year
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of budgets
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Budget"
+    post:
+      operationId: createBudget
+      tags: [budgets]
+      summary: Create a budget
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BudgetInput"
+      responses:
+        "201":
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Budget"
+
+  /budgets/{id}:
+    patch:
+      operationId: updateBudget
+      tags: [budgets]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BudgetUpdate"
+      responses:
+        "200":
+          description: Updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Budget"
+    delete:
+      operationId: deleteBudget
+      tags: [budgets]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  # ─── SETTINGS ────────────────────────────────────────────────────────────────
+  /settings:
+    get:
+      operationId: getSettings
+      tags: [settings]
+      summary: Get app settings
+      responses:
+        "200":
+          description: Settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppSettings"
+    patch:
+      operationId: updateSettings
+      tags: [settings]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AppSettingsUpdate"
+      responses:
+        "200":
+          description: Updated settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AppSettings"
+
+  # ─── DASHBOARD (WOW endpoints) ────────────────────────────────────────────────
+  /dashboard/summary:
+    get:
+      operationId: getDashboardSummary
+      tags: [dashboard]
+      summary: Dashboard KPI summary for current month
+      responses:
+        "200":
+          description: Dashboard summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DashboardSummary"
+
+  /dashboard/cashflow:
+    get:
+      operationId: getCashflowTrend
+      tags: [dashboard]
+      summary: Monthly cashflow trend for last 12 months
+      responses:
+        "200":
+          description: Cashflow trend data
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CashflowMonth"
+
+  /dashboard/spending-breakdown:
+    get:
+      operationId: getSpendingBreakdown
+      tags: [dashboard]
+      summary: Current month spending by category
+      parameters:
+        - name: month
+          in: query
+          schema:
+            type: string
+        - name: year
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: Spending breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategorySpend"
+
+  /dashboard/insights:
+    get:
+      operationId: getFinancialInsights
+      tags: [dashboard]
+      summary: AI-style financial insights based on spending patterns
+      responses:
+        "200":
+          description: Financial insights
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/FinancialInsight"
+
+  /dashboard/health-score:
+    get:
+      operationId: getHealthScore
+      tags: [dashboard]
+      summary: Financial health score out of 100
+      responses:
+        "200":
+          description: Health score
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthScore"
+
+  /dashboard/net-worth-history:
+    get:
+      operationId: getNetWorthHistory
+      tags: [dashboard]
+      summary: Historical net worth snapshots
+      responses:
+        "200":
+          description: Net worth history
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NetWorthSnapshot"
+
+  /dashboard/income-breakdown:
+    get:
+      operationId: getIncomeBreakdown
+      tags: [dashboard]
+      summary: Income breakdown by source for current month
+      responses:
+        "200":
+          description: Income breakdown
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/CategorySpend"
+
+  # ─── MONTHLY REPORTS ─────────────────────────────────────────────────────────
+  /reports:
+    get:
+      operationId: listReports
+      tags: [reports]
+      summary: List monthly reports
+      responses:
+        "200":
+          description: List of monthly reports
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/MonthlyReport"
+
+  /reports/{year}/{month}:
+    get:
+      operationId: getMonthlyReport
+      tags: [reports]
+      summary: Get report for a specific month
+      parameters:
+        - name: year
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: month
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Monthly report
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MonthlyReport"
+
 components:
   schemas:
     HealthStatus:
@@ -31,6 +761,358 @@ components:
       properties:
         status:
           type: string
-      required:
-        - status
+      required: [status]
 
+    # ─── TRANSACTION ───────────────────────────────────────────────────────────
+    Transaction:
+      type: object
+      required: [id, type, amount, category, date, createdAt]
+      properties:
+        id: { type: integer }
+        type: { type: string, enum: [income, expense] }
+        amount: { type: number }
+        category: { type: string }
+        source: { type: ["string", "null"] }
+        date: { type: string }
+        notes: { type: ["string", "null"] }
+        paymentMethod: { type: ["string", "null"] }
+        isRecurring: { type: boolean }
+        createdAt: { type: string }
+
+    TransactionInput:
+      type: object
+      required: [type, amount, category, date]
+      properties:
+        type: { type: string, enum: [income, expense] }
+        amount: { type: number }
+        category: { type: string }
+        source: { type: string }
+        date: { type: string }
+        notes: { type: string }
+        paymentMethod: { type: string }
+        isRecurring: { type: boolean }
+
+    TransactionUpdate:
+      type: object
+      properties:
+        type: { type: string, enum: [income, expense] }
+        amount: { type: number }
+        category: { type: string }
+        source: { type: string }
+        date: { type: string }
+        notes: { type: string }
+        paymentMethod: { type: string }
+        isRecurring: { type: boolean }
+
+    # ─── SAVINGS ───────────────────────────────────────────────────────────────
+    SavingsRecord:
+      type: object
+      required: [id, amount, account, date, createdAt]
+      properties:
+        id: { type: integer }
+        amount: { type: number }
+        account: { type: string }
+        date: { type: string }
+        notes: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    SavingsInput:
+      type: object
+      required: [amount, account, date]
+      properties:
+        amount: { type: number }
+        account: { type: string }
+        date: { type: string }
+        notes: { type: string }
+
+    SavingsUpdate:
+      type: object
+      properties:
+        amount: { type: number }
+        account: { type: string }
+        date: { type: string }
+        notes: { type: string }
+
+    # ─── GOAL ──────────────────────────────────────────────────────────────────
+    Goal:
+      type: object
+      required: [id, name, targetAmount, currentAmount, priority, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        targetAmount: { type: number }
+        currentAmount: { type: number }
+        deadline: { type: ["string", "null"] }
+        priority: { type: string, enum: [low, medium, high, critical] }
+        notes: { type: ["string", "null"] }
+        isCompleted: { type: boolean }
+        createdAt: { type: string }
+
+    GoalInput:
+      type: object
+      required: [name, targetAmount, priority]
+      properties:
+        name: { type: string }
+        targetAmount: { type: number }
+        currentAmount: { type: number }
+        deadline: { type: string }
+        priority: { type: string, enum: [low, medium, high, critical] }
+        notes: { type: string }
+
+    GoalUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        targetAmount: { type: number }
+        currentAmount: { type: number }
+        deadline: { type: string }
+        priority: { type: string, enum: [low, medium, high, critical] }
+        notes: { type: string }
+        isCompleted: { type: boolean }
+
+    # ─── INVESTMENT ────────────────────────────────────────────────────────────
+    Investment:
+      type: object
+      required: [id, name, type, purchaseValue, currentValue, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        type: { type: string, enum: [stocks, sacco, mmf, bonds, crypto, business, land, real_estate] }
+        purchaseValue: { type: number }
+        currentValue: { type: number }
+        returnPercent: { type: ["number", "null"] }
+        riskLevel: { type: string, enum: [low, medium, high] }
+        notes: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    InvestmentInput:
+      type: object
+      required: [name, type, purchaseValue, currentValue, riskLevel]
+      properties:
+        name: { type: string }
+        type: { type: string, enum: [stocks, sacco, mmf, bonds, crypto, business, land, real_estate] }
+        purchaseValue: { type: number }
+        currentValue: { type: number }
+        returnPercent: { type: number }
+        riskLevel: { type: string, enum: [low, medium, high] }
+        notes: { type: string }
+
+    InvestmentUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        type: { type: string, enum: [stocks, sacco, mmf, bonds, crypto, business, land, real_estate] }
+        purchaseValue: { type: number }
+        currentValue: { type: number }
+        returnPercent: { type: number }
+        riskLevel: { type: string, enum: [low, medium, high] }
+        notes: { type: string }
+
+    # ─── ASSET ─────────────────────────────────────────────────────────────────
+    Asset:
+      type: object
+      required: [id, name, category, value, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        category: { type: string, enum: [cash, savings, land, vehicle, investment, business, property, other] }
+        value: { type: number }
+        notes: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    AssetInput:
+      type: object
+      required: [name, category, value]
+      properties:
+        name: { type: string }
+        category: { type: string, enum: [cash, savings, land, vehicle, investment, business, property, other] }
+        value: { type: number }
+        notes: { type: string }
+
+    AssetUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        category: { type: string, enum: [cash, savings, land, vehicle, investment, business, property, other] }
+        value: { type: number }
+        notes: { type: string }
+
+    # ─── LIABILITY ─────────────────────────────────────────────────────────────
+    Liability:
+      type: object
+      required: [id, name, category, amount, createdAt]
+      properties:
+        id: { type: integer }
+        name: { type: string }
+        category: { type: string, enum: [loan, debt, credit, bnpl, mortgage, other] }
+        amount: { type: number }
+        interestRate: { type: ["number", "null"] }
+        dueDate: { type: ["string", "null"] }
+        notes: { type: ["string", "null"] }
+        createdAt: { type: string }
+
+    LiabilityInput:
+      type: object
+      required: [name, category, amount]
+      properties:
+        name: { type: string }
+        category: { type: string, enum: [loan, debt, credit, bnpl, mortgage, other] }
+        amount: { type: number }
+        interestRate: { type: number }
+        dueDate: { type: string }
+        notes: { type: string }
+
+    LiabilityUpdate:
+      type: object
+      properties:
+        name: { type: string }
+        category: { type: string, enum: [loan, debt, credit, bnpl, mortgage, other] }
+        amount: { type: number }
+        interestRate: { type: number }
+        dueDate: { type: string }
+        notes: { type: string }
+
+    # ─── BUDGET ────────────────────────────────────────────────────────────────
+    Budget:
+      type: object
+      required: [id, category, limit, month, year, spent, createdAt]
+      properties:
+        id: { type: integer }
+        category: { type: string }
+        limit: { type: number }
+        month: { type: integer }
+        year: { type: integer }
+        spent: { type: number }
+        createdAt: { type: string }
+
+    BudgetInput:
+      type: object
+      required: [category, limit, month, year]
+      properties:
+        category: { type: string }
+        limit: { type: number }
+        month: { type: integer }
+        year: { type: integer }
+
+    BudgetUpdate:
+      type: object
+      properties:
+        category: { type: string }
+        limit: { type: number }
+        month: { type: integer }
+        year: { type: integer }
+
+    # ─── SETTINGS ──────────────────────────────────────────────────────────────
+    AppSettings:
+      type: object
+      required: [id, currency, theme, emergencyFundMonths]
+      properties:
+        id: { type: integer }
+        currency: { type: string }
+        theme: { type: string, enum: [dark, light] }
+        emergencyFundMonths: { type: number }
+        usdConversionRate: { type: number }
+
+    AppSettingsUpdate:
+      type: object
+      properties:
+        currency: { type: string }
+        theme: { type: string, enum: [dark, light] }
+        emergencyFundMonths: { type: number }
+        usdConversionRate: { type: number }
+
+    # ─── DASHBOARD WOW SCHEMAS ─────────────────────────────────────────────────
+    DashboardSummary:
+      type: object
+      required: [totalBalance, monthlyIncome, monthlyExpenses, monthlySavings, netCashFlow, netWorth, savingsRate, emergencyFundMonths, investmentTotal, prevMonthIncome, prevMonthExpenses, prevMonthSavings]
+      properties:
+        totalBalance: { type: number }
+        monthlyIncome: { type: number }
+        monthlyExpenses: { type: number }
+        monthlySavings: { type: number }
+        netCashFlow: { type: number }
+        netWorth: { type: number }
+        savingsRate: { type: number }
+        emergencyFundMonths: { type: number }
+        investmentTotal: { type: number }
+        prevMonthIncome: { type: number }
+        prevMonthExpenses: { type: number }
+        prevMonthSavings: { type: number }
+
+    CashflowMonth:
+      type: object
+      required: [month, year, income, expenses, savings, label]
+      properties:
+        month: { type: integer }
+        year: { type: integer }
+        income: { type: number }
+        expenses: { type: number }
+        savings: { type: number }
+        investments: { type: number }
+        label: { type: string }
+
+    CategorySpend:
+      type: object
+      required: [category, amount, percentage]
+      properties:
+        category: { type: string }
+        amount: { type: number }
+        percentage: { type: number }
+
+    FinancialInsight:
+      type: object
+      required: [id, type, message, severity]
+      properties:
+        id: { type: string }
+        type: { type: string, enum: [warning, info, success, tip] }
+        message: { type: string }
+        severity: { type: string, enum: [low, medium, high] }
+        category: { type: ["string", "null"] }
+        changePercent: { type: ["number", "null"] }
+
+    HealthScore:
+      type: object
+      required: [score, label, breakdown]
+      properties:
+        score: { type: number }
+        label: { type: string, enum: [excellent, good, average, risky, critical] }
+        breakdown:
+          type: object
+          required: [savingsRate, cashFlow, emergencyFund, debtRatio, spendingConsistency, investmentGrowth]
+          properties:
+            savingsRate: { type: number }
+            cashFlow: { type: number }
+            emergencyFund: { type: number }
+            debtRatio: { type: number }
+            spendingConsistency: { type: number }
+            investmentGrowth: { type: number }
+
+    NetWorthSnapshot:
+      type: object
+      required: [month, year, assets, liabilities, netWorth, label]
+      properties:
+        month: { type: integer }
+        year: { type: integer }
+        assets: { type: number }
+        liabilities: { type: number }
+        netWorth: { type: number }
+        label: { type: string }
+
+    # ─── MONTHLY REPORT ────────────────────────────────────────────────────────
+    MonthlyReport:
+      type: object
+      required: [id, month, year, totalIncome, totalExpenses, totalSavings, netWorth, healthScore, topExpenseCategory, label, createdAt]
+      properties:
+        id: { type: integer }
+        month: { type: integer }
+        year: { type: integer }
+        totalIncome: { type: number }
+        totalExpenses: { type: number }
+        totalSavings: { type: number }
+        totalInvestments: { type: number }
+        netWorth: { type: number }
+        healthScore: { type: number }
+        topExpenseCategory: { type: string }
+        insights: { type: ["string", "null"] }
+        label: { type: string }
+        createdAt: { type: string }
