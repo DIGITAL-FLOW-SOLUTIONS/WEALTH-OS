@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { db, savingsTable } from "@workspace/db";
 import {
   ListSavingsResponse,
@@ -20,51 +20,40 @@ function parseSavings(s: typeof savingsTable.$inferSelect) {
   };
 }
 
-router.get("/savings", async (_req, res): Promise<void> => {
-  const rows = await db.select().from(savingsTable).orderBy(savingsTable.date);
+router.get("/savings", async (req, res): Promise<void> => {
+  const userId = req.userId;
+  const rows = await db.select().from(savingsTable).where(eq(savingsTable.userId, userId)).orderBy(savingsTable.date);
   res.json(ListSavingsResponse.parse(rows.map(parseSavings)));
 });
 
 router.post("/savings", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const parsed = CreateSavingsBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const [row] = await db.insert(savingsTable).values(parsed.data).returning();
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  const { amount, ...rest } = parsed.data;
+  const [row] = await db.insert(savingsTable).values({ ...rest, amount: String(amount), userId }).returning();
   res.status(201).json(parseSavings(row));
 });
 
 router.patch("/savings/:id", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const params = UpdateSavingsParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const parsed = UpdateSavingsBody.safeParse(req.body);
-  if (!parsed.success) {
-    res.status(400).json({ error: parsed.error.message });
-    return;
-  }
-  const [row] = await db.update(savingsTable).set(parsed.data).where(eq(savingsTable.id, params.data.id)).returning();
-  if (!row) {
-    res.status(404).json({ error: "Savings record not found" });
-    return;
-  }
+  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  const { amount, ...rest } = parsed.data;
+  const setData = { ...rest, ...(amount != null ? { amount: String(amount) } : {}) };
+  const [row] = await db.update(savingsTable).set(setData).where(and(eq(savingsTable.id, params.data.id), eq(savingsTable.userId, userId))).returning();
+  if (!row) { res.status(404).json({ error: "Savings record not found" }); return; }
   res.json(UpdateSavingsResponse.parse(parseSavings(row)));
 });
 
 router.delete("/savings/:id", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const params = DeleteSavingsParams.safeParse(req.params);
-  if (!params.success) {
-    res.status(400).json({ error: params.error.message });
-    return;
-  }
-  const [row] = await db.delete(savingsTable).where(eq(savingsTable.id, params.data.id)).returning();
-  if (!row) {
-    res.status(404).json({ error: "Savings record not found" });
-    return;
-  }
+  if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
+  const [row] = await db.delete(savingsTable).where(and(eq(savingsTable.id, params.data.id), eq(savingsTable.userId, userId))).returning();
+  if (!row) { res.status(404).json({ error: "Savings record not found" }); return; }
   res.sendStatus(204);
 });
 

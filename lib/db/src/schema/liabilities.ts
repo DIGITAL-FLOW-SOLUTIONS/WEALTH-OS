@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 
 export const liabilitiesTable = pgTable("liabilities", {
   id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
   name: text("name").notNull(),
   category: text("category").notNull(), // loan | debt | credit | bnpl | mortgage | other
   amount: numeric("amount", { precision: 15, scale: 2 }).notNull(),
@@ -13,6 +14,6 @@ export const liabilitiesTable = pgTable("liabilities", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const insertLiabilitySchema = createInsertSchema(liabilitiesTable).omit({ id: true, createdAt: true });
+export const insertLiabilitySchema = createInsertSchema(liabilitiesTable).omit({ id: true, createdAt: true, userId: true });
 export type InsertLiability = z.infer<typeof insertLiabilitySchema>;
 export type Liability = typeof liabilitiesTable.$inferSelect;

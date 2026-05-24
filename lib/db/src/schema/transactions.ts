@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 
 export const transactionsTable = pgTable("transactions", {
   id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
   type: text("type").notNull(), // income | expense
   amount: numeric("amount", { precision: 15, scale: 2 }).notNull(),
   category: text("category").notNull(),
@@ -15,6 +16,6 @@ export const transactionsTable = pgTable("transactions", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const insertTransactionSchema = createInsertSchema(transactionsTable).omit({ id: true, createdAt: true });
+export const insertTransactionSchema = createInsertSchema(transactionsTable).omit({ id: true, createdAt: true, userId: true });
 export type InsertTransaction = z.infer<typeof insertTransactionSchema>;
 export type Transaction = typeof transactionsTable.$inferSelect;

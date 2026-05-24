@@ -9,12 +9,13 @@ import {
 
 const router: IRouter = Router();
 
-async function buildReport(month: number, year: number) {
+async function buildReport(userId: string, month: number, year: number) {
   const [incomeRow] = await db
     .select({ total: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)` })
     .from(transactionsTable)
     .where(
       and(
+        eq(transactionsTable.userId, userId),
         eq(transactionsTable.type, "income"),
         sql`EXTRACT(MONTH FROM ${transactionsTable.date}::date) = ${month}`,
         sql`EXTRACT(YEAR FROM ${transactionsTable.date}::date) = ${year}`
@@ -26,6 +27,7 @@ async function buildReport(month: number, year: number) {
     .from(transactionsTable)
     .where(
       and(
+        eq(transactionsTable.userId, userId),
         eq(transactionsTable.type, "expense"),
         sql`EXTRACT(MONTH FROM ${transactionsTable.date}::date) = ${month}`,
         sql`EXTRACT(YEAR FROM ${transactionsTable.date}::date) = ${year}`
@@ -37,6 +39,7 @@ async function buildReport(month: number, year: number) {
     .from(savingsTable)
     .where(
       and(
+        eq(savingsTable.userId, userId),
         sql`EXTRACT(MONTH FROM ${savingsTable.date}::date) = ${month}`,
         sql`EXTRACT(YEAR FROM ${savingsTable.date}::date) = ${year}`
       )
@@ -44,15 +47,18 @@ async function buildReport(month: number, year: number) {
 
   const [assetsRow] = await db
     .select({ total: sql<string>`COALESCE(SUM(${assetsTable.value}), 0)` })
-    .from(assetsTable);
+    .from(assetsTable)
+    .where(eq(assetsTable.userId, userId));
 
   const [liabilitiesRow] = await db
     .select({ total: sql<string>`COALESCE(SUM(${liabilitiesTable.amount}), 0)` })
-    .from(liabilitiesTable);
+    .from(liabilitiesTable)
+    .where(eq(liabilitiesTable.userId, userId));
 
   const [investmentsRow] = await db
     .select({ total: sql<string>`COALESCE(SUM(${investmentsTable.currentValue}), 0)` })
-    .from(investmentsTable);
+    .from(investmentsTable)
+    .where(eq(investmentsTable.userId, userId));
 
   const topCatRows = await db
     .select({
@@ -62,6 +68,7 @@ async function buildReport(month: number, year: number) {
     .from(transactionsTable)
     .where(
       and(
+        eq(transactionsTable.userId, userId),
         eq(transactionsTable.type, "expense"),
         sql`EXTRACT(MONTH FROM ${transactionsTable.date}::date) = ${month}`,
         sql`EXTRACT(YEAR FROM ${transactionsTable.date}::date) = ${year}`
@@ -112,7 +119,8 @@ async function buildReport(month: number, year: number) {
   };
 }
 
-router.get("/reports", async (_req, res): Promise<void> => {
+router.get("/reports", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const now = new Date();
   const months = [];
   for (let i = 5; i >= 0; i--) {
@@ -120,17 +128,18 @@ router.get("/reports", async (_req, res): Promise<void> => {
     months.push({ month: d.getMonth() + 1, year: d.getFullYear() });
   }
 
-  const reports = await Promise.all(months.map(({ month, year }) => buildReport(month, year)));
+  const reports = await Promise.all(months.map(({ month, year }) => buildReport(userId, month, year)));
   res.json(ListReportsResponse.parse(reports));
 });
 
 router.get("/reports/:year/:month", async (req, res): Promise<void> => {
+  const userId = req.userId;
   const params = GetMonthlyReportParams.safeParse(req.params);
   if (!params.success) {
     res.status(400).json({ error: params.error.message });
     return;
   }
-  const report = await buildReport(params.data.month, params.data.year);
+  const report = await buildReport(userId, params.data.month, params.data.year);
   res.json(GetMonthlyReportResponse.parse(report));
 });
 

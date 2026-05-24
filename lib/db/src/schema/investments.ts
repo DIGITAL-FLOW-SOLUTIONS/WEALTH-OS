@@ -4,6 +4,7 @@ import { z } from "zod/v4";
 
 export const investmentsTable = pgTable("investments", {
   id: serial("id").primaryKey(),
+  userId: text("user_id").notNull(),
   name: text("name").notNull(),
   type: text("type").notNull(), // stocks | sacco | mmf | bonds | crypto | business | land | real_estate
   purchaseValue: numeric("purchase_value", { precision: 15, scale: 2 }).notNull(),
@@ -14,6 +15,6 @@ export const investmentsTable = pgTable("investments", {
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
 });
 
-export const insertInvestmentSchema = createInsertSchema(investmentsTable).omit({ id: true, createdAt: true });
+export const insertInvestmentSchema = createInsertSchema(investmentsTable).omit({ id: true, createdAt: true, userId: true });
 export type InsertInvestment = z.infer<typeof insertInvestmentSchema>;
 export type Investment = typeof investmentsTable.$inferSelect;

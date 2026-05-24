@@ -30,8 +30,8 @@ export default function Reports() {
   const { data: reports, isLoading } = useListReports();
   const [selected, setSelected] = useState<{ month: number; year: number } | null>(null);
   const { data: detail } = useGetMonthlyReport(
-    selected ? { month: selected.month, year: selected.year } : { month: 0, year: 0 },
-    { enabled: selected !== null && selected.month > 0 }
+    selected?.year ?? 0,
+    selected?.month ?? 0,
   );
 
   if (selected && detail) {
@@ -69,7 +69,7 @@ export default function Reports() {
           </div>
           <div className="card-glass p-3 text-center">
             <p className="text-xs text-muted-foreground">Investments</p>
-            <p className="text-lg font-bold text-gold mt-1">{formatCurrency(detail.totalInvestments)}</p>
+            <p className="text-lg font-bold text-gold mt-1">{formatCurrency(detail.totalInvestments ?? 0)}</p>
           </div>
           <div className="card-glass p-3 text-center">
             <p className="text-xs text-muted-foreground">Net Worth</p>

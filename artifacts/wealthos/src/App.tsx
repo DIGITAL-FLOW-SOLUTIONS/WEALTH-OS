@@ -14,7 +14,12 @@ import NetWorth from "@/pages/NetWorth";
 import Investments from "@/pages/Investments";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
+import Auth from "@/pages/Auth";
 import NotFound from "@/pages/not-found";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { getSupabase } from "@/lib/supabase";
+import { Loader2 } from "lucide-react";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -25,7 +30,34 @@ const queryClient = new QueryClient({
   },
 });
 
+// Register token getter so every API call includes the Supabase JWT
+setAuthTokenGetter(async () => {
+  try {
+    const { data: { session } } = await getSupabase().auth.getSession();
+    return session?.access_token ?? null;
+  } catch {
+    return null;
+  }
+});
+
 function AppRoutes() {
+  const { user, loading } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#0a0f1c] flex items-center justify-center">
+        <div className="flex flex-col items-center gap-3">
+          <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
+          <p className="text-slate-400 text-sm">Loading WealthOS…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Auth />;
+  }
+
   return (
     <Layout>
       <Switch>
@@ -53,10 +85,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <AppRoutes />
-        </WouterRouter>
-        <Toaster />
+        <AuthProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <AppRoutes />
+          </WouterRouter>
+          <Toaster />
+        </AuthProvider>
       </TooltipProvider>
     </QueryClientProvider>
   );

@@ -170,7 +170,7 @@ export default function Investments() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-sm font-medium">{inv.name}</span>
-                          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", riskBadge(inv.riskLevel))}>{inv.riskLevel} risk</Badge>
+                          <Badge variant="outline" className={cn("text-[10px] px-1.5 py-0", riskBadge(inv.riskLevel ?? "medium"))}>{inv.riskLevel} risk</Badge>
                           <Badge variant="secondary" className="text-[10px] px-1.5 py-0 capitalize">{inv.type.replace(/_/g, " ")}</Badge>
                         </div>
                         <div className="flex items-center gap-4 mt-1 text-xs text-muted-foreground flex-wrap">

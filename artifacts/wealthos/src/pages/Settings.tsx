@@ -44,7 +44,7 @@ export default function Settings() {
         currency: form.currency,
         emergencyFundMonths: parseFloat(form.emergencyFundMonths),
         usdConversionRate: parseFloat(form.usdConversionRate),
-        theme: form.theme,
+        theme: form.theme as "dark" | "light",
       },
     }, {
       onSuccess: () => {
