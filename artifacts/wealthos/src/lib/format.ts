@@ -1,27 +1,40 @@
-export function formatCurrency(amount: number, currency = "KES"): string {
+let _currency = "KES";
+
+export function setActiveCurrency(c: string) {
+  _currency = c;
+}
+
+export function getActiveCurrency(): string {
+  return _currency;
+}
+
+export function formatCurrency(amount: number, currency?: string): string {
+  const cur = currency ?? _currency;
   return new Intl.NumberFormat("en-KE", {
     style: "currency",
-    currency,
+    currency: cur,
     minimumFractionDigits: 0,
     maximumFractionDigits: 0,
   }).format(amount);
 }
 
-export function formatCurrencyFull(amount: number, currency = "KES"): string {
+export function formatCurrencyFull(amount: number, currency?: string): string {
+  const cur = currency ?? _currency;
   return new Intl.NumberFormat("en-KE", {
     style: "currency",
-    currency,
+    currency: cur,
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(amount);
 }
 
 export function formatCompact(amount: number): string {
+  const cur = _currency;
   if (Math.abs(amount) >= 1_000_000) {
-    return `KES ${(amount / 1_000_000).toFixed(1)}M`;
+    return `${cur} ${(amount / 1_000_000).toFixed(1)}M`;
   }
   if (Math.abs(amount) >= 1_000) {
-    return `KES ${(amount / 1_000).toFixed(1)}K`;
+    return `${cur} ${(amount / 1_000).toFixed(1)}K`;
   }
   return formatCurrency(amount);
 }

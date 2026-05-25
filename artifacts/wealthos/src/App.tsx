@@ -17,6 +17,7 @@ import Settings from "@/pages/Settings";
 import Auth from "@/pages/Auth";
 import NotFound from "@/pages/not-found";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
+import { SettingsProvider } from "@/context/SettingsContext";
 import { setAuthTokenGetter } from "@workspace/api-client-react";
 import { getSupabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
@@ -30,7 +31,6 @@ const queryClient = new QueryClient({
   },
 });
 
-// Register token getter so every API call includes the Supabase JWT
 setAuthTokenGetter(async () => {
   try {
     const { data: { session } } = await getSupabase().auth.getSession();
@@ -59,21 +59,23 @@ function AppRoutes() {
   }
 
   return (
-    <Layout>
-      <Switch>
-        <Route path="/" component={Dashboard} />
-        <Route path="/transactions" component={Transactions} />
-        <Route path="/analytics" component={Analytics} />
-        <Route path="/budget" component={Budget} />
-        <Route path="/goals" component={Goals} />
-        <Route path="/assets-liabilities" component={AssetsLiabilities} />
-        <Route path="/net-worth" component={NetWorth} />
-        <Route path="/investments" component={Investments} />
-        <Route path="/reports" component={Reports} />
-        <Route path="/settings" component={Settings} />
-        <Route component={NotFound} />
-      </Switch>
-    </Layout>
+    <SettingsProvider>
+      <Layout>
+        <Switch>
+          <Route path="/" component={Dashboard} />
+          <Route path="/transactions" component={Transactions} />
+          <Route path="/analytics" component={Analytics} />
+          <Route path="/budget" component={Budget} />
+          <Route path="/goals" component={Goals} />
+          <Route path="/assets-liabilities" component={AssetsLiabilities} />
+          <Route path="/net-worth" component={NetWorth} />
+          <Route path="/investments" component={Investments} />
+          <Route path="/reports" component={Reports} />
+          <Route path="/settings" component={Settings} />
+          <Route component={NotFound} />
+        </Switch>
+      </Layout>
+    </SettingsProvider>
   );
 }
 

@@ -1,7 +1,8 @@
 import { useState } from "react";
 import {
   useListGoals, useCreateGoal, useUpdateGoal, useDeleteGoal,
-  getListGoalsQueryKey,
+  useListSavings, useCreateSavings, useDeleteSavings,
+  getListGoalsQueryKey, getListSavingsQueryKey,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { formatCurrency, formatDate } from "@/lib/format";
@@ -14,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, CheckCircle2, Target } from "lucide-react";
+import { Plus, Trash2, CheckCircle2, Target, PiggyBank, Loader2 } from "lucide-react";
 
 const priorityColor = (p: string) => {
   if (p === "critical") return "text-rose-500 border-rose-500/30";
@@ -46,16 +47,21 @@ export default function Goals() {
   const { toast } = useToast();
   const [open, setOpen] = useState(false);
   const [editGoal, setEditGoal] = useState<number | null>(null);
+  const [savingsOpen, setSavingsOpen] = useState(false);
   const [form, setForm] = useState<Record<string, string>>({});
 
-  const { data: goals, isLoading } = useListGoals();
+  const { data: goals, isLoading: goalsLoading } = useListGoals();
+  const { data: savings, isLoading: savingsLoading } = useListSavings();
   const create = useCreateGoal();
   const update = useUpdateGoal();
   const del = useDeleteGoal();
+  const createSavings = useCreateSavings();
+  const deleteSavings = useDeleteSavings();
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
 
-  const invalidate = () => qc.invalidateQueries({ queryKey: getListGoalsQueryKey() });
+  const invalidateGoals = () => qc.invalidateQueries({ queryKey: getListGoalsQueryKey() });
+  const invalidateSavings = () => qc.invalidateQueries({ queryKey: getListSavingsQueryKey() });
 
   const handleCreate = () => {
     create.mutate({
@@ -68,7 +74,7 @@ export default function Goals() {
         notes: form.notes,
       },
     }, {
-      onSuccess: () => { toast({ title: "Goal created" }); setOpen(false); setForm({}); invalidate(); },
+      onSuccess: () => { toast({ title: "Goal created" }); setOpen(false); setForm({}); invalidateGoals(); },
       onError: () => toast({ title: "Error", variant: "destructive" }),
     });
   };
@@ -76,38 +82,61 @@ export default function Goals() {
   const handleUpdate = (id: number) => {
     update.mutate({
       id,
-      data: {
-        currentAmount: parseFloat(form.contribution || "0"),
-      },
+      data: { currentAmount: parseFloat(form.contribution || "0") },
     }, {
-      onSuccess: () => { toast({ title: "Progress updated" }); setEditGoal(null); setForm({}); invalidate(); },
+      onSuccess: () => { toast({ title: "Progress updated" }); setEditGoal(null); setForm({}); invalidateGoals(); },
       onError: () => toast({ title: "Error", variant: "destructive" }),
     });
   };
 
   const handleDelete = (id: number) => {
     del.mutate({ id }, {
-      onSuccess: () => { toast({ title: "Goal deleted" }); invalidate(); },
+      onSuccess: () => { toast({ title: "Goal deleted" }); invalidateGoals(); },
+      onError: () => toast({ title: "Error", variant: "destructive" }),
+    });
+  };
+
+  const handleAddSavings = () => {
+    const today = new Date().toISOString().split("T")[0];
+    createSavings.mutate({
+      data: {
+        amount: parseFloat(form.savAmount || "0"),
+        account: form.savAccount || "Savings Account",
+        date: form.savDate || today,
+        notes: form.savNotes,
+      },
+    }, {
+      onSuccess: () => { toast({ title: "Savings entry added" }); setSavingsOpen(false); setForm({}); invalidateSavings(); },
+      onError: () => toast({ title: "Error adding savings", variant: "destructive" }),
+    });
+  };
+
+  const handleDeleteSavings = (id: number) => {
+    deleteSavings.mutate({ id }, {
+      onSuccess: () => { toast({ title: "Deleted" }); invalidateSavings(); },
       onError: () => toast({ title: "Error", variant: "destructive" }),
     });
   };
 
   const active = (goals ?? []).filter(g => !g.isCompleted);
   const completed = (goals ?? []).filter(g => g.isCompleted);
+  const totalSaved = (savings ?? []).reduce((s, r) => s + r.amount, 0);
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-5">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Goals & Savings</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{active.length} active goals</p>
+          <p className="text-sm text-muted-foreground mt-0.5">{active.length} active goal{active.length !== 1 ? "s" : ""}</p>
         </div>
         <Button onClick={() => { setOpen(true); setForm({}); }} data-testid="button-add-goal" className="gap-2">
           <Plus className="w-4 h-4" />New Goal
         </Button>
       </div>
 
-      {isLoading ? (
+      {/* ── GOALS SECTION ── */}
+      {goalsLoading ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-40 rounded-xl" />)}
         </div>
@@ -176,14 +205,63 @@ export default function Goals() {
         </>
       )}
 
-      {/* Create Modal */}
+      {/* ── SAVINGS SECTION ── */}
+      <div>
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-2">
+            <PiggyBank className="w-4 h-4 text-primary" />
+            <h2 className="text-sm font-semibold">Savings Entries</h2>
+            {(savings ?? []).length > 0 && (
+              <Badge variant="outline" className="text-[10px] text-money-in border-money-in/30 px-1.5 py-0">
+                Total: {formatCurrency(totalSaved)}
+              </Badge>
+            )}
+          </div>
+          <Button size="sm" onClick={() => { setSavingsOpen(true); setForm({}); }} className="gap-1.5 h-8 text-xs" data-testid="button-add-savings">
+            <Plus className="w-3.5 h-3.5" />Add Entry
+          </Button>
+        </div>
+
+        {savingsLoading ? (
+          <div className="space-y-2">
+            {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-14 rounded-xl" />)}
+          </div>
+        ) : (savings ?? []).length === 0 ? (
+          <div className="card-glass p-8 text-center">
+            <PiggyBank className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+            <p className="text-muted-foreground text-sm">No savings entries yet.</p>
+            <p className="text-muted-foreground text-xs mt-1">Track deposits to savings accounts, M-Shwari, SACCOs, etc.</p>
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {[...(savings ?? [])].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).map(s => (
+              <div key={s.id} className="card-glass p-3 flex items-center gap-3 group">
+                <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <PiggyBank className="w-4 h-4 text-primary" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{s.account}</p>
+                  <p className="text-xs text-muted-foreground">{formatDate(s.date)}{s.notes ? ` · ${s.notes}` : ""}</p>
+                </div>
+                <p className="text-sm font-semibold text-money-in tabular-nums">{formatCurrency(s.amount)}</p>
+                <Button variant="ghost" size="icon" className="w-7 h-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive shrink-0"
+                  onClick={() => handleDeleteSavings(s.id)}>
+                  <Trash2 className="w-3.5 h-3.5" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Create Goal Modal */}
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader><DialogTitle>New Financial Goal</DialogTitle></DialogHeader>
           <div className="space-y-3">
             <div className="space-y-1"><Label>Goal Name</Label><Input data-testid="input-goal-name" placeholder="e.g. Buy Laptop" value={form.name || ""} onChange={e => set("name", e.target.value)} /></div>
-            <div className="space-y-1"><Label>Target Amount (KES)</Label><Input type="number" placeholder="0" value={form.targetAmount || ""} onChange={e => set("targetAmount", e.target.value)} /></div>
-            <div className="space-y-1"><Label>Current Amount (KES)</Label><Input type="number" placeholder="0" value={form.currentAmount || ""} onChange={e => set("currentAmount", e.target.value)} /></div>
+            <div className="space-y-1"><Label>Target Amount</Label><Input type="number" placeholder="0" value={form.targetAmount || ""} onChange={e => set("targetAmount", e.target.value)} /></div>
+            <div className="space-y-1"><Label>Current Amount</Label><Input type="number" placeholder="0" value={form.currentAmount || ""} onChange={e => set("currentAmount", e.target.value)} /></div>
             <div className="space-y-1"><Label>Deadline (optional)</Label><Input type="date" value={form.deadline || ""} onChange={e => set("deadline", e.target.value)} /></div>
             <div className="space-y-1"><Label>Priority</Label>
               <Select value={form.priority || "medium"} onValueChange={v => set("priority", v)}>
@@ -193,7 +271,7 @@ export default function Goals() {
             </div>
             <div className="space-y-1"><Label>Notes</Label><Input placeholder="Optional" value={form.notes || ""} onChange={e => set("notes", e.target.value)} /></div>
             <Button className="w-full" onClick={handleCreate} disabled={create.isPending} data-testid="button-submit-goal">
-              {create.isPending ? "Saving..." : "Create Goal"}
+              {create.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : "Create Goal"}
             </Button>
           </div>
         </DialogContent>
@@ -204,12 +282,36 @@ export default function Goals() {
         <DialogContent className="sm:max-w-sm">
           <DialogHeader><DialogTitle>Update Progress</DialogTitle></DialogHeader>
           <div className="space-y-3">
-            <div className="space-y-1"><Label>New Total Saved (KES)</Label>
+            <div className="space-y-1"><Label>New Total Saved</Label>
               <Input type="number" placeholder="0" value={form.contribution || ""} onChange={e => set("contribution", e.target.value)} />
               <p className="text-xs text-muted-foreground">Enter your new total saved amount for this goal</p>
             </div>
             <Button className="w-full" onClick={() => handleUpdate(editGoal!)} disabled={update.isPending}>
-              {update.isPending ? "Saving..." : "Update"}
+              {update.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : "Update"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Savings Modal */}
+      <Dialog open={savingsOpen} onOpenChange={setSavingsOpen}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>Add Savings Entry</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1"><Label>Amount</Label>
+              <Input type="number" placeholder="0" value={form.savAmount || ""} onChange={e => set("savAmount", e.target.value)} />
+            </div>
+            <div className="space-y-1"><Label>Account / Platform</Label>
+              <Input placeholder="e.g. M-Shwari, KCB Savings, SACCO" value={form.savAccount || ""} onChange={e => set("savAccount", e.target.value)} />
+            </div>
+            <div className="space-y-1"><Label>Date</Label>
+              <Input type="date" value={form.savDate || new Date().toISOString().split("T")[0]} onChange={e => set("savDate", e.target.value)} />
+            </div>
+            <div className="space-y-1"><Label>Notes (optional)</Label>
+              <Input placeholder="Optional" value={form.savNotes || ""} onChange={e => set("savNotes", e.target.value)} />
+            </div>
+            <Button className="w-full" onClick={handleAddSavings} disabled={createSavings.isPending || !form.savAmount} data-testid="button-submit-savings">
+              {createSavings.isPending ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : "Add Entry"}
             </Button>
           </div>
         </DialogContent>

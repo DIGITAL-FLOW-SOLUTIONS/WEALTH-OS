@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useSettings } from "@/context/SettingsContext";
 import {
   useGetDashboardSummary,
   useGetCashflowTrend,
@@ -42,7 +43,7 @@ import {
 } from "recharts";
 import {
   TrendingUp, TrendingDown, Minus, Plus, AlertTriangle,
-  CheckCircle2, Info, Lightbulb, Zap,
+  CheckCircle2, Info, Lightbulb, Zap, Loader2,
 } from "lucide-react";
 
 const COLORS = [
@@ -96,6 +97,7 @@ const healthColor = (label: string) => {
 export default function Dashboard() {
   const qc = useQueryClient();
   const { toast } = useToast();
+  const { emergencyFundTarget } = useSettings();
   const [quickOpen, setQuickOpen] = useState(false);
 
   const { data: summary, isLoading: sumLoading } = useGetDashboardSummary();
@@ -110,6 +112,8 @@ export default function Dashboard() {
   const createGoal = useCreateGoal();
   const createAsset = useCreateAsset();
   const createInvestment = useCreateInvestment();
+
+  const isSubmitting = createTx.isPending || createSavings.isPending || createGoal.isPending || createAsset.isPending || createInvestment.isPending;
 
   const invalidateAll = () => {
     qc.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
@@ -199,8 +203,13 @@ export default function Dashboard() {
           color={(summary?.netWorth ?? 0) >= 0 ? "green" : "red"} sub="Assets minus liabilities" loading={sumLoading} />
         <KpiCard title="Savings Rate" value={`${(summary?.savingsRate ?? 0).toFixed(1)}%`}
           color={(summary?.savingsRate ?? 0) >= 20 ? "green" : "red"} sub="Target: 20%+" loading={sumLoading} />
-        <KpiCard title="Emergency Fund" value={`${(summary?.emergencyFundMonths ?? 0).toFixed(1)} mo`}
-          color={(summary?.emergencyFundMonths ?? 0) >= 6 ? "green" : "red"} sub="Target: 6 months" loading={sumLoading} />
+        <KpiCard
+          title="Emergency Fund"
+          value={`${(summary?.emergencyFundMonths ?? 0).toFixed(1)} / ${emergencyFundTarget} mo`}
+          color={(summary?.emergencyFundMonths ?? 0) >= emergencyFundTarget ? "green" : (summary?.emergencyFundMonths ?? 0) >= emergencyFundTarget / 2 ? "gold" : "red"}
+          sub={`${((summary?.emergencyFundMonths ?? 0) / emergencyFundTarget * 100).toFixed(0)}% of ${emergencyFundTarget}-month target`}
+          loading={sumLoading}
+        />
         <KpiCard title="Investments" value={formatCompact(summary?.investmentTotal ?? 0)} color="gold" loading={sumLoading} />
       </div>
 
@@ -459,7 +468,9 @@ export default function Dashboard() {
               </div>
             </TabsContent>
           </Tabs>
-          <Button data-testid="button-submit-quick" onClick={handleQuickSubmit} className="w-full mt-2">Save</Button>
+          <Button data-testid="button-submit-quick" onClick={handleQuickSubmit} disabled={isSubmitting} className="w-full mt-2">
+            {isSubmitting ? <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</> : "Save"}
+          </Button>
         </DialogContent>
       </Dialog>
     </div>

@@ -15,7 +15,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, AlertTriangle, CheckCircle2 } from "lucide-react";
+import { Plus, Trash2, AlertTriangle, CheckCircle2, Loader2 } from "lucide-react";
 
 const EXPENSE_CATS = ["rent", "food", "transport", "fuel", "internet", "electricity", "water", "shopping", "family", "healthcare", "insurance", "entertainment", "debt", "taxes", "business", "miscellaneous"];
 
@@ -29,9 +29,14 @@ export default function Budget() {
   const [selectedYear, setSelectedYear] = useState(now.getFullYear());
   const [form, setForm] = useState({ category: "", limit: "", month: String(now.getMonth() + 1), year: String(now.getFullYear()) });
 
-  const { data: budgets, isLoading } = useListBudgets({ month: String(selectedMonth), year: String(selectedYear) });
+  const { data: budgets, isLoading, isError, refetch } = useListBudgets({ month: String(selectedMonth), year: String(selectedYear) });
   const create = useCreateBudget();
   const deleteBudget = useDeleteBudget();
+
+  const invalidateBudgets = () => {
+    qc.invalidateQueries({ queryKey: getListBudgetsQueryKey({ month: String(selectedMonth), year: String(selectedYear) }) });
+    qc.invalidateQueries({ queryKey: getListBudgetsQueryKey() });
+  };
 
   const handleCreate = () => {
     create.mutate({
@@ -42,14 +47,20 @@ export default function Budget() {
         year: parseInt(form.year),
       },
     }, {
-      onSuccess: () => { toast({ title: "Budget created" }); setOpen(false); setForm({ category: "", limit: "", month: String(selectedMonth), year: String(selectedYear) }); qc.invalidateQueries({ queryKey: getListBudgetsQueryKey() }); },
-      onError: () => toast({ title: "Error", variant: "destructive" }),
+      onSuccess: () => {
+        toast({ title: "Budget created" });
+        setOpen(false);
+        setForm({ category: "", limit: "", month: String(selectedMonth), year: String(selectedYear) });
+        invalidateBudgets();
+        refetch();
+      },
+      onError: () => toast({ title: "Error creating budget", variant: "destructive" }),
     });
   };
 
   const handleDelete = (id: number) => {
     deleteBudget.mutate({ id }, {
-      onSuccess: () => { toast({ title: "Deleted" }); qc.invalidateQueries({ queryKey: getListBudgetsQueryKey() }); },
+      onSuccess: () => { toast({ title: "Deleted" }); invalidateBudgets(); },
       onError: () => toast({ title: "Error", variant: "destructive" }),
     });
   };
@@ -110,6 +121,10 @@ export default function Budget() {
       <div className="space-y-3">
         {isLoading ? (
           Array.from({ length: 4 }).map((_, i) => <Skeleton key={i} className="h-20 w-full rounded-xl" />)
+        ) : isError ? (
+          <div className="card-glass p-10 text-center">
+            <p className="text-destructive text-sm">Failed to load budgets. <button className="underline" onClick={() => refetch()}>Try again</button></p>
+          </div>
         ) : (budgets ?? []).length === 0 ? (
           <div className="card-glass p-10 text-center">
             <p className="text-muted-foreground text-sm">No budgets for this month. Create one above.</p>
@@ -158,7 +173,7 @@ export default function Budget() {
                 <SelectContent>{EXPENSE_CATS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
               </Select>
             </div>
-            <div className="space-y-1"><Label>Budget Limit (KES)</Label><Input type="number" placeholder="0" value={form.limit} onChange={e => setForm(f => ({ ...f, limit: e.target.value }))} /></div>
+            <div className="space-y-1"><Label>Budget Limit</Label><Input type="number" placeholder="0" value={form.limit} onChange={e => setForm(f => ({ ...f, limit: e.target.value }))} /></div>
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1"><Label>Month</Label>
                 <Select value={form.month} onValueChange={v => setForm(f => ({ ...f, month: v }))}>
@@ -173,8 +188,10 @@ export default function Budget() {
                 </Select>
               </div>
             </div>
-            <Button className="w-full" onClick={handleCreate} disabled={create.isPending} data-testid="button-submit-budget">
-              {create.isPending ? "Saving..." : "Create Budget"}
+            <Button className="w-full" onClick={handleCreate} disabled={create.isPending || !form.category || !form.limit} data-testid="button-submit-budget">
+              {create.isPending ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />Saving…</>
+              ) : "Create Budget"}
             </Button>
           </div>
         </DialogContent>
