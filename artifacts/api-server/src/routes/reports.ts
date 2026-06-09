@@ -1,5 +1,5 @@
 import { Router, type IRouter } from "express";
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, sql, notInArray } from "drizzle-orm";
 import { db, transactionsTable, savingsTable, assetsTable, liabilitiesTable, investmentsTable } from "@workspace/db";
 import {
   ListReportsResponse,
@@ -18,7 +18,8 @@ async function buildReport(userId: string, month: number, year: number) {
         eq(transactionsTable.userId, userId),
         eq(transactionsTable.type, "income"),
         sql`EXTRACT(MONTH FROM ${transactionsTable.date}::date) = ${month}`,
-        sql`EXTRACT(YEAR FROM ${transactionsTable.date}::date) = ${year}`
+        sql`EXTRACT(YEAR FROM ${transactionsTable.date}::date) = ${year}`,
+        notInArray(transactionsTable.category, ["carry_forward", "last_balance"])
       )
     );
 

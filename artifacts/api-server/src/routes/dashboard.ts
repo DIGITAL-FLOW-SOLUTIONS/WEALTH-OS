@@ -27,6 +27,8 @@ function prevMonthYear() {
   return { month: m, year: y };
 }
 
+const CARRY_CATEGORIES = ["carry_forward", "last_balance"] as const;
+
 async function getMonthSum(userId: string, type: "income" | "expense", month: number, year: number): Promise<number> {
   const [row] = await db
     .select({ total: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)` })
@@ -36,7 +38,10 @@ async function getMonthSum(userId: string, type: "income" | "expense", month: nu
         eq(transactionsTable.userId, userId),
         eq(transactionsTable.type, type),
         sql`EXTRACT(MONTH FROM ${transactionsTable.date}::date) = ${month}`,
-        sql`EXTRACT(YEAR FROM ${transactionsTable.date}::date) = ${year}`
+        sql`EXTRACT(YEAR FROM ${transactionsTable.date}::date) = ${year}`,
+        type === "income"
+          ? sql`${transactionsTable.category} NOT IN (${sql.join(CARRY_CATEGORIES.map(c => sql`${c}`), sql`, `)})`
+          : sql`1=1`
       )
     );
   return parseFloat(row?.total ?? "0");
@@ -220,7 +225,8 @@ router.get("/dashboard/income-breakdown", async (req, res): Promise<void> => {
         eq(transactionsTable.userId, userId),
         eq(transactionsTable.type, "income"),
         sql`EXTRACT(MONTH FROM ${transactionsTable.date}::date) = ${month}`,
-        sql`EXTRACT(YEAR FROM ${transactionsTable.date}::date) = ${year}`
+        sql`EXTRACT(YEAR FROM ${transactionsTable.date}::date) = ${year}`,
+        sql`${transactionsTable.category} NOT IN (${sql.join(CARRY_CATEGORIES.map(c => sql`${c}`), sql`, `)})`
       )
     )
     .groupBy(transactionsTable.category)
