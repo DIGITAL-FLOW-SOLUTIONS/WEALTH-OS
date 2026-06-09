@@ -654,3 +654,75 @@ export const GetMonthlyReportResponse = zod.object({
 })
 
 
+/**
+ * @summary List active challenges
+ */
+export const ListChallengesResponse = zod.object({
+  "challenges": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "targetAmount": zod.number().nullish(),
+  "difficulty": zod.string(),
+  "xpReward": zod.number(),
+  "expiresAt": zod.string(),
+  "completedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})),
+  "totalXp": zod.number()
+})
+
+
+/**
+ * @summary Generate fresh challenges
+ */
+export const GenerateChallengesResponse = zod.object({
+  "challenges": zod.array(zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "targetAmount": zod.number().nullish(),
+  "difficulty": zod.string(),
+  "xpReward": zod.number(),
+  "expiresAt": zod.string(),
+  "completedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+}))
+})
+
+
+/**
+ * @summary Mark a challenge complete
+ */
+export const CompleteChallengeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const CompleteChallengeResponse = zod.object({
+  "id": zod.number(),
+  "title": zod.string(),
+  "description": zod.string(),
+  "category": zod.string(),
+  "targetAmount": zod.number().nullish(),
+  "difficulty": zod.string(),
+  "xpReward": zod.number(),
+  "expiresAt": zod.string(),
+  "completedAt": zod.string().nullish(),
+  "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Dismiss a challenge
+ */
+export const DismissChallengeParams = zod.object({
+  "id": zod.coerce.number()
+})
+
+export const DismissChallengeResponse = zod.object({
+  "ok": zod.boolean()
+})
+
+

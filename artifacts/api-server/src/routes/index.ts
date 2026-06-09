@@ -10,6 +10,7 @@ import budgetsRouter from "./budgets";
 import settingsRouter from "./settings";
 import dashboardRouter from "./dashboard";
 import reportsRouter from "./reports";
+import challengesRouter from "./challenges";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(budgetsRouter);
 router.use(settingsRouter);
 router.use(dashboardRouter);
 router.use(reportsRouter);
+router.use(challengesRouter);
 
 export default router;

@@ -7,3 +7,4 @@ export * from "./liabilities";
 export * from "./budgets";
 export * from "./settings";
 export * from "./reports";
+export * from "./challenges";

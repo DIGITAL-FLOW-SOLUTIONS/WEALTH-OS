@@ -570,6 +570,19 @@ export interface MonthlyReport {
   createdAt: string;
 }
 
+export interface Challenge {
+  id: number;
+  title: string;
+  description: string;
+  category: string;
+  targetAmount?: number | null;
+  difficulty: string;
+  xpReward: number;
+  expiresAt: string;
+  completedAt?: string | null;
+  createdAt: string;
+}
+
 export type ListTransactionsParams = {
 type?: ListTransactionsType;
 month?: string;
@@ -593,5 +606,18 @@ year?: string;
 export type GetSpendingBreakdownParams = {
 month?: string;
 year?: string;
+};
+
+export type ListChallenges200 = {
+  challenges: Challenge[];
+  totalXp: number;
+};
+
+export type GenerateChallenges200 = {
+  challenges: Challenge[];
+};
+
+export type DismissChallenge200 = {
+  ok: boolean;
 };
 
