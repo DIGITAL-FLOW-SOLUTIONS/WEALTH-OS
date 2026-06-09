@@ -48,6 +48,8 @@ const INCOME_CATS = [
 const EXPENSE_CATS = [
   "rent",
   "food",
+  "Wifey",
+  "Laundry",
   "tithe",
   "transport",
   "entertainment",
