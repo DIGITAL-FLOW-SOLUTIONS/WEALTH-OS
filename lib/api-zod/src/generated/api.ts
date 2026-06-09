@@ -56,6 +56,27 @@ export const CreateTransactionBody = zod.object({
 })
 
 
+/**
+ * @summary Carry forward previous month balance as income for the current month
+ */
+export const CarryForwardBalanceResponse = zod.object({
+  "created": zod.boolean(),
+  "amount": zod.number(),
+  "transaction": zod.object({
+  "id": zod.number(),
+  "type": zod.enum(['income', 'expense']),
+  "amount": zod.number(),
+  "category": zod.string(),
+  "source": zod.string().nullish(),
+  "date": zod.string(),
+  "notes": zod.string().nullish(),
+  "paymentMethod": zod.string().nullish(),
+  "isRecurring": zod.boolean().optional(),
+  "createdAt": zod.string()
+}).optional()
+})
+
+
 export const GetTransactionParams = zod.object({
   "id": zod.coerce.number()
 })

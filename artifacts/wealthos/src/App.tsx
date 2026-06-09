@@ -18,7 +18,7 @@ import Auth from "@/pages/Auth";
 import NotFound from "@/pages/not-found";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { SettingsProvider } from "@/context/SettingsContext";
-import { setAuthTokenGetter } from "@workspace/api-client-react";
+import { setAuthTokenGetter, useCarryForwardBalance } from "@workspace/api-client-react";
 import { getSupabase } from "@/lib/supabase";
 import { Loader2 } from "lucide-react";
 
@@ -40,6 +40,15 @@ setAuthTokenGetter(async () => {
   }
 });
 
+function CarryForwardRunner() {
+  const carryForward = useCarryForwardBalance();
+  useEffect(() => {
+    carryForward.mutate();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return null;
+}
+
 function AppRoutes() {
   const { user, loading } = useAuth();
 
@@ -60,6 +69,7 @@ function AppRoutes() {
 
   return (
     <SettingsProvider>
+      <CarryForwardRunner />
       <Layout>
         <Switch>
           <Route path="/" component={Dashboard} />

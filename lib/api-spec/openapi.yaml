@@ -96,6 +96,19 @@ paths:
               schema:
                 $ref: "#/components/schemas/Transaction"
 
+  /transactions/carry-forward:
+    post:
+      operationId: carryForwardBalance
+      tags: [transactions]
+      summary: Carry forward previous month balance as income for the current month
+      responses:
+        "200":
+          description: Carry forward result (created or already exists)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CarryForwardResult"
+
   /transactions/{id}:
     get:
       operationId: getTransaction
@@ -762,6 +775,18 @@ components:
         status:
           type: string
       required: [status]
+
+    # ─── CARRY FORWARD ─────────────────────────────────────────────────────────
+    CarryForwardResult:
+      type: object
+      required: [created, amount]
+      properties:
+        created:
+          type: boolean
+        amount:
+          type: number
+        transaction:
+          $ref: "#/components/schemas/Transaction"
 
     # ─── TRANSACTION ───────────────────────────────────────────────────────────
     Transaction:

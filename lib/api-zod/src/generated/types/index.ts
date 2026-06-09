@@ -19,6 +19,7 @@ export * from './assetUpdateCategory';
 export * from './budget';
 export * from './budgetInput';
 export * from './budgetUpdate';
+export * from './carryForwardResult';
 export * from './cashflowMonth';
 export * from './categorySpend';
 export * from './dashboardSummary';

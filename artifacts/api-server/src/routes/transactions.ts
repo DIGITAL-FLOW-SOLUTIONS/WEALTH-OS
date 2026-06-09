@@ -51,6 +51,90 @@ router.post("/transactions", async (req, res): Promise<void> => {
   res.status(201).json(GetTransactionResponse.parse(parseTransaction(row)));
 });
 
+router.post("/transactions/carry-forward", async (req, res): Promise<void> => {
+  const userId = req.userId;
+  const now = new Date();
+  const targetMonth = now.getMonth() + 1;
+  const targetYear = now.getFullYear();
+
+  // Previous month
+  const prevDate = new Date(targetYear, targetMonth - 2, 1);
+  const prevMonth = prevDate.getMonth() + 1;
+  const prevYear = prevDate.getFullYear();
+
+  // Idempotency check: carry-forward already done for this month?
+  const existing = await db
+    .select()
+    .from(transactionsTable)
+    .where(
+      and(
+        eq(transactionsTable.userId, userId),
+        eq(transactionsTable.category, "carry_forward"),
+        sql`to_char(${transactionsTable.date}::date, 'YYYY-MM') = ${`${targetYear}-${String(targetMonth).padStart(2, "0")}`}`
+      )
+    )
+    .limit(1);
+
+  if (existing.length > 0) {
+    res.json({ created: false, amount: parseFloat(existing[0].amount as string) });
+    return;
+  }
+
+  // Sum previous month income and expenses
+  const [incomeRows, expenseRows] = await Promise.all([
+    db
+      .select({ total: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)` })
+      .from(transactionsTable)
+      .where(
+        and(
+          eq(transactionsTable.userId, userId),
+          eq(transactionsTable.type, "income"),
+          sql`EXTRACT(MONTH FROM ${transactionsTable.date}::date) = ${prevMonth}`,
+          sql`EXTRACT(YEAR FROM ${transactionsTable.date}::date) = ${prevYear}`
+        )
+      ),
+    db
+      .select({ total: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)` })
+      .from(transactionsTable)
+      .where(
+        and(
+          eq(transactionsTable.userId, userId),
+          eq(transactionsTable.type, "expense"),
+          sql`EXTRACT(MONTH FROM ${transactionsTable.date}::date) = ${prevMonth}`,
+          sql`EXTRACT(YEAR FROM ${transactionsTable.date}::date) = ${prevYear}`
+        )
+      ),
+  ]);
+
+  const prevIncome = parseFloat(incomeRows[0]?.total ?? "0");
+  const prevExpenses = parseFloat(expenseRows[0]?.total ?? "0");
+  const balance = prevIncome - prevExpenses;
+
+  if (balance <= 0) {
+    res.json({ created: false, amount: 0 });
+    return;
+  }
+
+  const dateStr = `${targetYear}-${String(targetMonth).padStart(2, "0")}-01`;
+  const prevMonthName = prevDate.toLocaleDateString("en-KE", { month: "long", year: "numeric" });
+
+  const [row] = await db
+    .insert(transactionsTable)
+    .values({
+      userId,
+      type: "income",
+      amount: String(balance),
+      category: "carry_forward",
+      source: "Monthly Balance Carry Forward",
+      date: dateStr,
+      notes: `Auto-carried from ${prevMonthName}`,
+      isRecurring: false,
+    })
+    .returning();
+
+  res.status(201).json({ created: true, amount: balance, transaction: parseTransaction(row) });
+});
+
 router.get("/transactions/:id", async (req, res): Promise<void> => {
   const userId = req.userId;
   const params = GetTransactionParams.safeParse(req.params);

@@ -33,6 +33,12 @@ export interface Transaction {
   createdAt: string;
 }
 
+export interface CarryForwardResult {
+  created: boolean;
+  amount: number;
+  transaction?: Transaction;
+}
+
 export type TransactionInputType = typeof TransactionInputType[keyof typeof TransactionInputType];
 
 

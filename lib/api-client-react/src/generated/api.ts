@@ -28,6 +28,7 @@ import type {
   Budget,
   BudgetInput,
   BudgetUpdate,
+  CarryForwardResult,
   CashflowMonth,
   CategorySpend,
   DashboardSummary,
@@ -298,6 +299,76 @@ export const useCreateTransaction = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateTransactionMutationOptions(options));
+    }
+
+export const getCarryForwardBalanceUrl = () => {
+
+
+
+
+  return `/api/transactions/carry-forward`
+}
+
+/**
+ * @summary Carry forward previous month balance as income for the current month
+ */
+export const carryForwardBalance = async ( options?: RequestInit): Promise<CarryForwardResult> => {
+
+  return customFetch<CarryForwardResult>(getCarryForwardBalanceUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+export const getCarryForwardBalanceMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof carryForwardBalance>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof carryForwardBalance>>, TError,void, TContext> => {
+
+const mutationKey = ['carryForwardBalance'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof carryForwardBalance>>, void> = () => {
+
+
+          return  carryForwardBalance(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CarryForwardBalanceMutationResult = NonNullable<Awaited<ReturnType<typeof carryForwardBalance>>>
+
+    export type CarryForwardBalanceMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Carry forward previous month balance as income for the current month
+ */
+export const useCarryForwardBalance = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof carryForwardBalance>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof carryForwardBalance>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getCarryForwardBalanceMutationOptions(options));
     }
 
 export const getGetTransactionUrl = (id: number,) => {
