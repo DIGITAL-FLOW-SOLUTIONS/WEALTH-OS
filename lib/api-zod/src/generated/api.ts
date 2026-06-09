@@ -510,6 +510,7 @@ export const GetDashboardSummaryResponse = zod.object({
   "monthlyExpenses": zod.number(),
   "monthlySavings": zod.number(),
   "netCashFlow": zod.number(),
+  "openingBalance": zod.number(),
   "netWorth": zod.number(),
   "savingsRate": zod.number(),
   "emergencyFundMonths": zod.number(),

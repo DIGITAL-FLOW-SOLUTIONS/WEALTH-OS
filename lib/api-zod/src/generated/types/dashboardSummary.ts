@@ -12,6 +12,7 @@ export interface DashboardSummary {
   monthlyExpenses: number;
   monthlySavings: number;
   netCashFlow: number;
+  openingBalance: number;
   netWorth: number;
   savingsRate: number;
   emergencyFundMonths: number;

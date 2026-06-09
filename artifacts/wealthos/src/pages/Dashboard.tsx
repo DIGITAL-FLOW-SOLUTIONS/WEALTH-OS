@@ -473,6 +473,11 @@ export default function Dashboard() {
           title="Net Cash Flow"
           value={formatCompact(summary?.netCashFlow ?? 0)}
           color={(summary?.netCashFlow ?? 0) >= 0 ? "green" : "red"}
+          sub={
+            (summary?.openingBalance ?? 0) > 0
+              ? `Incl. ${formatCompact(summary!.openingBalance)} opening balance`
+              : undefined
+          }
           loading={sumLoading}
         />
         <KpiCard

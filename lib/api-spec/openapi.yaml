@@ -1049,13 +1049,14 @@ components:
     # ─── DASHBOARD WOW SCHEMAS ─────────────────────────────────────────────────
     DashboardSummary:
       type: object
-      required: [totalBalance, monthlyIncome, monthlyExpenses, monthlySavings, netCashFlow, netWorth, savingsRate, emergencyFundMonths, investmentTotal, prevMonthIncome, prevMonthExpenses, prevMonthSavings]
+      required: [totalBalance, monthlyIncome, monthlyExpenses, monthlySavings, netCashFlow, openingBalance, netWorth, savingsRate, emergencyFundMonths, investmentTotal, prevMonthIncome, prevMonthExpenses, prevMonthSavings]
       properties:
         totalBalance: { type: number }
         monthlyIncome: { type: number }
         monthlyExpenses: { type: number }
         monthlySavings: { type: number }
         netCashFlow: { type: number }
+        openingBalance: { type: number }
         netWorth: { type: number }
         savingsRate: { type: number }
         emergencyFundMonths: { type: number }

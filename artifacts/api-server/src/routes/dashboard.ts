@@ -29,6 +29,22 @@ function prevMonthYear() {
 
 const CARRY_CATEGORIES = ["carry_forward", "last_balance"] as const;
 
+async function getMonthOpeningBalance(userId: string, month: number, year: number): Promise<number> {
+  const [row] = await db
+    .select({ total: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)` })
+    .from(transactionsTable)
+    .where(
+      and(
+        eq(transactionsTable.userId, userId),
+        eq(transactionsTable.type, "income"),
+        sql`${transactionsTable.category} IN (${sql.join(CARRY_CATEGORIES.map(c => sql`${c}`), sql`, `)})`,
+        sql`EXTRACT(MONTH FROM ${transactionsTable.date}::date) = ${month}`,
+        sql`EXTRACT(YEAR FROM ${transactionsTable.date}::date) = ${year}`
+      )
+    );
+  return parseFloat(row?.total ?? "0");
+}
+
 async function getMonthSum(userId: string, type: "income" | "expense", month: number, year: number): Promise<number> {
   const [row] = await db
     .select({ total: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)` })
@@ -102,7 +118,7 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
     monthlyIncome, monthlyExpenses, monthlySavings,
     prevIncome, prevExpenses, prevSavings,
     totalAssets, totalLiabilities, investmentTotal,
-    allSavings,
+    allSavings, openingBalance,
   ] = await Promise.all([
     getMonthSum(userId, "income", month, year),
     getMonthSum(userId, "expense", month, year),
@@ -114,10 +130,11 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
     getTotalLiabilities(userId),
     getTotalInvestments(userId),
     getTotalSavings(userId),
+    getMonthOpeningBalance(userId, month, year),
   ]);
 
   const netWorth = totalAssets - totalLiabilities;
-  const netCashFlow = monthlyIncome - monthlyExpenses;
+  const netCashFlow = monthlyIncome + openingBalance - monthlyExpenses;
   const savingsRate = monthlyIncome > 0 ? (monthlySavings / monthlyIncome) * 100 : 0;
 
   let avgMonthlyExpenses = monthlyExpenses;
@@ -133,6 +150,7 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
     monthlyExpenses,
     monthlySavings,
     netCashFlow,
+    openingBalance,
     netWorth,
     savingsRate,
     emergencyFundMonths,
