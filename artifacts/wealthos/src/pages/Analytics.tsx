@@ -130,7 +130,7 @@ export default function Analytics() {
                 {spending.map((s, i) => (
                   <div key={s.category} className="flex items-center gap-1.5 text-xs">
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
-                    <span className="capitalize text-muted-foreground truncate">{s.category}</span>
+                    <span className="capitalize text-muted-foreground truncate">{s.category.replace(/_/g, " ")}</span>
                     <span className="ml-auto font-medium">{s.percentage.toFixed(0)}%</span>
                   </div>
                 ))}
@@ -158,7 +158,9 @@ export default function Analytics() {
                 {income.map((s, i) => (
                   <div key={s.category} className="flex items-center gap-1.5 text-xs">
                     <span className="w-2 h-2 rounded-full shrink-0" style={{ background: COLORS[i % COLORS.length] }} />
-                    <span className="capitalize text-muted-foreground truncate">{s.category}</span>
+                    <span className="capitalize text-muted-foreground truncate">
+                      {s.category === "carry_forward" ? "Balance Carry Forward" : s.category === "last_balance" ? "Last Balance" : s.category.replace(/_/g, " ")}
+                    </span>
                     <span className="ml-auto font-medium text-money-in">{formatCurrency(s.amount)}</span>
                   </div>
                 ))}

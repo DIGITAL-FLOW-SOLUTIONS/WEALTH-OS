@@ -44,6 +44,7 @@ const INCOME_CATS = [
   "gift",
   "refund",
   "loan",
+  "last_balance",
 ];
 const EXPENSE_CATS = [
   "rent",
@@ -300,9 +301,17 @@ export default function Transactions() {
                 <div className="flex items-center gap-2">
                   <Badge
                     variant="secondary"
-                    className={`text-[10px] capitalize px-1.5 py-0 ${t.category === "carry_forward" ? "bg-blue-500/20 text-blue-400" : ""}`}
+                    className={`text-[10px] capitalize px-1.5 py-0 ${
+                      t.category === "carry_forward" || t.category === "last_balance"
+                        ? "bg-blue-500/20 text-blue-400"
+                        : ""
+                    }`}
                   >
-                    {t.category === "carry_forward" ? "Balance Carry Forward" : t.category.replace(/_/g, " ")}
+                    {t.category === "carry_forward"
+                      ? "Balance Carry Forward"
+                      : t.category === "last_balance"
+                        ? "Last Balance"
+                        : t.category.replace(/_/g, " ")}
                   </Badge>
                   {t.source && (
                     <span className="text-xs text-muted-foreground truncate">

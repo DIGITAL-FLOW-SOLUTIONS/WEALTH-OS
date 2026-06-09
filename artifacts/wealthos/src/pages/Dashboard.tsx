@@ -96,6 +96,7 @@ const INCOME_CATEGORIES = [
   "gift",
   "refund",
   "loan",
+  "last_balance",
 ];
 const EXPENSE_CATEGORIES = [
   "rent",
