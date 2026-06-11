@@ -1,0 +1,1 @@
+- [Orval update category types](orval-update-category-types.md) — Orval generates named union types for update payloads (e.g. AssetUpdateCategory); explicit `as "a"|"b"` cast required, not `as EntityRow["category"]`.

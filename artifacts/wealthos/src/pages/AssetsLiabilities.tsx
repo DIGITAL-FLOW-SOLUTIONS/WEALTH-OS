@@ -1,7 +1,7 @@
 import { useState } from "react";
 import {
-  useListAssets, useCreateAsset, useDeleteAsset,
-  useListLiabilities, useCreateLiability, useDeleteLiability,
+  useListAssets, useCreateAsset, useUpdateAsset, useDeleteAsset,
+  useListLiabilities, useCreateLiability, useUpdateLiability, useDeleteLiability,
   getListAssetsQueryKey, getListLiabilitiesQueryKey,
   getGetDashboardSummaryQueryKey, getGetNetWorthHistoryQueryKey,
 } from "@workspace/api-client-react";
@@ -17,37 +17,71 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Trash2, TrendingUp, TrendingDown } from "lucide-react";
+import { Plus, Trash2, TrendingUp, TrendingDown, Pencil } from "lucide-react";
 
-const ASSET_CATS = ["cash", "savings", "land", "vehicle", "investment", "business", "property", "other"];
-const LIABILITY_CATS = ["loan", "debt", "credit", "bnpl", "mortgage", "other"];
+const ASSET_CATS = ["cash","savings","land","vehicle","investment","business","property","other"];
+const LIABILITY_CATS = ["loan","debt","credit","bnpl","mortgage","other"];
 
 const assetCatColor = (c: string) => {
   const m: Record<string, string> = { cash: "text-emerald-400", savings: "text-blue-400", land: "text-amber-400", vehicle: "text-purple-400", investment: "text-gold", business: "text-cyan-400" };
   return m[c] || "text-muted-foreground";
 };
 
+type AssetRow = { id: number; name: string; category: string; value: number; notes?: string | null };
+type LiabRow = { id: number; name: string; category: string; amount: number; interestRate?: number | null; dueDate?: string | null; notes?: string | null };
+
 export default function AssetsLiabilities() {
   const qc = useQueryClient();
   const { toast } = useToast();
   const [assetOpen, setAssetOpen] = useState(false);
   const [liabOpen, setLiabOpen] = useState(false);
+  const [editAsset, setEditAsset] = useState<AssetRow | null>(null);
+  const [editLiab, setEditLiab] = useState<LiabRow | null>(null);
   const [form, setForm] = useState<Record<string, string>>({});
+  const [editForm, setEditForm] = useState<Record<string, string>>({});
 
   const { data: assets, isLoading: aLoad } = useListAssets();
   const { data: liabilities, isLoading: lLoad } = useListLiabilities();
   const createAsset = useCreateAsset();
+  const updateAsset = useUpdateAsset();
   const deleteAsset = useDeleteAsset();
   const createLiab = useCreateLiability();
+  const updateLiab = useUpdateLiability();
   const deleteLiab = useDeleteLiability();
 
   const set = (k: string, v: string) => setForm(f => ({ ...f, [k]: v }));
+  const setE = (k: string, v: string) => setEditForm(f => ({ ...f, [k]: v }));
 
   const invalidateAll = () => {
     qc.invalidateQueries({ queryKey: getListAssetsQueryKey() });
     qc.invalidateQueries({ queryKey: getListLiabilitiesQueryKey() });
     qc.invalidateQueries({ queryKey: getGetDashboardSummaryQueryKey() });
     qc.invalidateQueries({ queryKey: getGetNetWorthHistoryQueryKey() });
+  };
+
+  const openEditAsset = (a: AssetRow) => {
+    setEditAsset(a);
+    setEditForm({ name: a.name, category: a.category, value: String(a.value), notes: a.notes ?? "" });
+  };
+  const openEditLiab = (l: LiabRow) => {
+    setEditLiab(l);
+    setEditForm({ name: l.name, category: l.category, amount: String(l.amount), interestRate: l.interestRate != null ? String(l.interestRate) : "", dueDate: l.dueDate ?? "", notes: l.notes ?? "" });
+  };
+
+  const handleEditAssetSave = () => {
+    if (!editAsset) return;
+    updateAsset.mutate({ id: editAsset.id, data: { name: editForm.name || editAsset.name, category: (editForm.category || editAsset.category) as "cash"|"savings"|"land"|"vehicle"|"investment"|"business"|"property"|"other", value: parseFloat(editForm.value || "0"), notes: editForm.notes || undefined } }, {
+      onSuccess: () => { toast({ title: "Asset updated" }); setEditAsset(null); invalidateAll(); },
+      onError: () => toast({ title: "Error", variant: "destructive" }),
+    });
+  };
+
+  const handleEditLiabSave = () => {
+    if (!editLiab) return;
+    updateLiab.mutate({ id: editLiab.id, data: { name: editForm.name || editLiab.name, category: (editForm.category || editLiab.category) as "loan"|"debt"|"credit"|"bnpl"|"mortgage"|"other", amount: parseFloat(editForm.amount || "0"), interestRate: editForm.interestRate ? parseFloat(editForm.interestRate) : undefined, dueDate: editForm.dueDate || undefined, notes: editForm.notes || undefined } }, {
+      onSuccess: () => { toast({ title: "Liability updated" }); setEditLiab(null); invalidateAll(); },
+      onError: () => toast({ title: "Error", variant: "destructive" }),
+    });
   };
 
   const totalAssets = (assets ?? []).reduce((s, a) => s + a.value, 0);
@@ -61,20 +95,13 @@ export default function AssetsLiabilities() {
         <p className="text-sm text-muted-foreground mt-0.5">What you own vs what you owe</p>
       </div>
 
-      {/* Summary bar */}
       <div className="grid grid-cols-3 gap-3">
         <div className="card-glass p-3 text-center">
-          <div className="flex items-center justify-center gap-1.5 mb-1">
-            <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-            <p className="text-xs text-muted-foreground">Total Assets</p>
-          </div>
+          <div className="flex items-center justify-center gap-1.5 mb-1"><TrendingUp className="w-3.5 h-3.5 text-emerald-500" /><p className="text-xs text-muted-foreground">Total Assets</p></div>
           <p className="text-lg font-bold text-money-in tabular-nums">{formatCurrency(totalAssets)}</p>
         </div>
         <div className="card-glass p-3 text-center">
-          <div className="flex items-center justify-center gap-1.5 mb-1">
-            <TrendingDown className="w-3.5 h-3.5 text-rose-500" />
-            <p className="text-xs text-muted-foreground">Total Liabilities</p>
-          </div>
+          <div className="flex items-center justify-center gap-1.5 mb-1"><TrendingDown className="w-3.5 h-3.5 text-rose-500" /><p className="text-xs text-muted-foreground">Total Liabilities</p></div>
           <p className="text-lg font-bold text-money-out tabular-nums">{formatCurrency(totalLiabilities)}</p>
         </div>
         <div className="card-glass p-3 text-center">
@@ -83,7 +110,6 @@ export default function AssetsLiabilities() {
         </div>
       </div>
 
-      {/* Asset ratio bar */}
       {(totalAssets + totalLiabilities) > 0 && (
         <div className="card-glass p-4">
           <div className="flex items-center justify-between text-xs text-muted-foreground mb-2">
@@ -125,8 +151,10 @@ export default function AssetsLiabilities() {
                   {a.notes && <p className="text-xs text-muted-foreground mt-0.5">{a.notes}</p>}
                 </div>
                 <span className="text-sm font-semibold text-money-in tabular-nums">{formatCurrency(a.value)}</span>
-                <Button variant="ghost" size="icon" className="w-7 h-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
-                  onClick={() => deleteAsset.mutate({ id: a.id }, { onSuccess: invalidateAll })}>
+                <Button variant="ghost" size="icon" className="w-7 h-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary" onClick={() => openEditAsset(a as AssetRow)}>
+                  <Pencil className="w-3.5 h-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="w-7 h-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={() => deleteAsset.mutate({ id: a.id }, { onSuccess: invalidateAll })}>
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
               </div>
@@ -155,8 +183,10 @@ export default function AssetsLiabilities() {
                   </div>
                 </div>
                 <span className="text-sm font-semibold text-money-out tabular-nums">{formatCurrency(l.amount)}</span>
-                <Button variant="ghost" size="icon" className="w-7 h-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive"
-                  onClick={() => deleteLiab.mutate({ id: l.id }, { onSuccess: invalidateAll })}>
+                <Button variant="ghost" size="icon" className="w-7 h-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-primary" onClick={() => openEditLiab(l as LiabRow)}>
+                  <Pencil className="w-3.5 h-3.5" />
+                </Button>
+                <Button variant="ghost" size="icon" className="w-7 h-7 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-destructive" onClick={() => deleteLiab.mutate({ id: l.id }, { onSuccess: invalidateAll })}>
                   <Trash2 className="w-3.5 h-3.5" />
                 </Button>
               </div>
@@ -165,7 +195,7 @@ export default function AssetsLiabilities() {
         </TabsContent>
       </Tabs>
 
-      {/* Asset Dialog */}
+      {/* Add Asset Dialog */}
       <Dialog open={assetOpen} onOpenChange={setAssetOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader><DialogTitle>Add Asset</DialogTitle></DialogHeader>
@@ -180,14 +210,35 @@ export default function AssetsLiabilities() {
             <div className="space-y-1"><Label>Current Value (KES)</Label><Input type="number" placeholder="0" value={form.value || ""} onChange={e => set("value", e.target.value)} /></div>
             <div className="space-y-1"><Label>Notes</Label><Input placeholder="Optional" value={form.notes || ""} onChange={e => set("notes", e.target.value)} /></div>
             <Button className="w-full" disabled={createAsset.isPending}
-              onClick={() => createAsset.mutate({ data: { name: form.name || "Asset", category: (form.category as "cash" | "savings" | "land" | "vehicle" | "investment" | "business" | "property" | "other") || "cash", value: parseFloat(form.value || "0"), notes: form.notes } }, { onSuccess: () => { toast({ title: "Asset added" }); setAssetOpen(false); setForm({}); invalidateAll(); }, onError: () => toast({ title: "Error", variant: "destructive" }) })}>
+              onClick={() => createAsset.mutate({ data: { name: form.name || "Asset", category: (form.category as "cash"|"savings"|"land"|"vehicle"|"investment"|"business"|"property"|"other") || "cash", value: parseFloat(form.value || "0"), notes: form.notes } }, { onSuccess: () => { toast({ title: "Asset added" }); setAssetOpen(false); setForm({}); invalidateAll(); }, onError: () => toast({ title: "Error", variant: "destructive" }) })}>
               {createAsset.isPending ? "Saving..." : "Add Asset"}
             </Button>
           </div>
         </DialogContent>
       </Dialog>
 
-      {/* Liability Dialog */}
+      {/* Edit Asset Dialog */}
+      <Dialog open={editAsset !== null} onOpenChange={o => { if (!o) setEditAsset(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>Edit Asset</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1"><Label>Name</Label><Input placeholder="e.g. KCB Savings Account" value={editForm.name || ""} onChange={e => setE("name", e.target.value)} /></div>
+            <div className="space-y-1"><Label>Category</Label>
+              <Select value={editForm.category || ""} onValueChange={v => setE("category", v)}>
+                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectContent>{ASSET_CATS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1"><Label>Current Value (KES)</Label><Input type="number" placeholder="0" value={editForm.value || ""} onChange={e => setE("value", e.target.value)} /></div>
+            <div className="space-y-1"><Label>Notes</Label><Input placeholder="Optional" value={editForm.notes || ""} onChange={e => setE("notes", e.target.value)} /></div>
+            <Button className="w-full" onClick={handleEditAssetSave} disabled={updateAsset.isPending}>
+              {updateAsset.isPending ? "Saving..." : "Save Changes"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Add Liability Dialog */}
       <Dialog open={liabOpen} onOpenChange={setLiabOpen}>
         <DialogContent className="sm:max-w-sm">
           <DialogHeader><DialogTitle>Add Liability</DialogTitle></DialogHeader>
@@ -203,8 +254,30 @@ export default function AssetsLiabilities() {
             <div className="space-y-1"><Label>Interest Rate (%)</Label><Input type="number" placeholder="e.g. 14" value={form.interestRate || ""} onChange={e => set("interestRate", e.target.value)} /></div>
             <div className="space-y-1"><Label>Due Date</Label><Input type="date" value={form.dueDate || ""} onChange={e => set("dueDate", e.target.value)} /></div>
             <Button className="w-full" disabled={createLiab.isPending}
-              onClick={() => createLiab.mutate({ data: { name: form.name || "Liability", category: (form.category as "loan" | "debt" | "credit" | "bnpl" | "mortgage" | "other") || "loan", amount: parseFloat(form.amount || "0"), interestRate: form.interestRate ? parseFloat(form.interestRate) : undefined, dueDate: form.dueDate || undefined } }, { onSuccess: () => { toast({ title: "Liability added" }); setLiabOpen(false); setForm({}); invalidateAll(); }, onError: () => toast({ title: "Error", variant: "destructive" }) })}>
+              onClick={() => createLiab.mutate({ data: { name: form.name || "Liability", category: (form.category as "loan"|"debt"|"credit"|"bnpl"|"mortgage"|"other") || "loan", amount: parseFloat(form.amount || "0"), interestRate: form.interestRate ? parseFloat(form.interestRate) : undefined, dueDate: form.dueDate || undefined } }, { onSuccess: () => { toast({ title: "Liability added" }); setLiabOpen(false); setForm({}); invalidateAll(); }, onError: () => toast({ title: "Error", variant: "destructive" }) })}>
               {createLiab.isPending ? "Saving..." : "Add Liability"}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Edit Liability Dialog */}
+      <Dialog open={editLiab !== null} onOpenChange={o => { if (!o) setEditLiab(null); }}>
+        <DialogContent className="sm:max-w-sm">
+          <DialogHeader><DialogTitle>Edit Liability</DialogTitle></DialogHeader>
+          <div className="space-y-3">
+            <div className="space-y-1"><Label>Name</Label><Input placeholder="e.g. KCB Loan" value={editForm.name || ""} onChange={e => setE("name", e.target.value)} /></div>
+            <div className="space-y-1"><Label>Category</Label>
+              <Select value={editForm.category || ""} onValueChange={v => setE("category", v)}>
+                <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
+                <SelectContent>{LIABILITY_CATS.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-1"><Label>Amount Owed (KES)</Label><Input type="number" placeholder="0" value={editForm.amount || ""} onChange={e => setE("amount", e.target.value)} /></div>
+            <div className="space-y-1"><Label>Interest Rate (%)</Label><Input type="number" placeholder="e.g. 14" value={editForm.interestRate || ""} onChange={e => setE("interestRate", e.target.value)} /></div>
+            <div className="space-y-1"><Label>Due Date</Label><Input type="date" value={editForm.dueDate || ""} onChange={e => setE("dueDate", e.target.value)} /></div>
+            <Button className="w-full" onClick={handleEditLiabSave} disabled={updateLiab.isPending}>
+              {updateLiab.isPending ? "Saving..." : "Save Changes"}
             </Button>
           </div>
         </DialogContent>

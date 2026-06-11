@@ -12,6 +12,11 @@ import {
   useCreateGoal,
   useCreateAsset,
   useCreateInvestment,
+  useListChallenges,
+  useGenerateChallenges,
+  useCompleteChallenge,
+  useDismissChallenge,
+  getListChallengesQueryKey,
   getGetDashboardSummaryQueryKey,
   getGetCashflowTrendQueryKey,
   getGetSpendingBreakdownQueryKey,
@@ -117,6 +122,121 @@ const EXPENSE_CATEGORIES = [
   "Lending",
   "fuel",
 ];
+
+function timeLeft(expiresAt: string): string {
+  const diff = new Date(expiresAt).getTime() - Date.now();
+  if (diff <= 0) return "Expired";
+  const h = Math.floor(diff / 3_600_000);
+  if (h < 24) return `${h}h left`;
+  return `${Math.floor(h / 24)}d left`;
+}
+
+const difficultyStyle = (d: string) => {
+  if (d === "large") return { border: "border-orange-500/40", badge: "bg-orange-500/15 text-orange-400" };
+  if (d === "medium") return { border: "border-amber-500/40", badge: "bg-amber-500/15 text-amber-400" };
+  return { border: "border-emerald-500/40", badge: "bg-emerald-500/15 text-emerald-400" };
+};
+
+function ChallengesWidget() {
+  const qc = useQueryClient();
+  const { toast } = useToast();
+  const { data, isLoading } = useListChallenges();
+  const generate = useGenerateChallenges();
+  const complete = useCompleteChallenge();
+  const dismiss = useDismissChallenge();
+
+  const challenges = (data?.challenges ?? []).filter(c => !c.completedAt);
+  const totalXp = data?.totalXp ?? 0;
+
+  const refetch = () => qc.invalidateQueries({ queryKey: getListChallengesQueryKey() });
+
+  const handleComplete = (id: number) => {
+    complete.mutate({ id }, {
+      onSuccess: () => { toast({ title: "Challenge complete! XP earned 🎉" }); refetch(); },
+      onError: () => toast({ title: "Error", variant: "destructive" }),
+    });
+  };
+
+  const handleDismiss = (id: number) => {
+    dismiss.mutate({ id }, { onSuccess: refetch, onError: () => toast({ title: "Error", variant: "destructive" }) });
+  };
+
+  const handleGenerate = () => {
+    generate.mutate(undefined, {
+      onSuccess: () => { toast({ title: "New challenges generated!" }); refetch(); },
+      onError: () => toast({ title: "Error", variant: "destructive" }),
+    });
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Zap className="w-4 h-4 text-amber-400" />
+          <h2 className="text-sm font-semibold">Financial Challenges</h2>
+        </div>
+        {totalXp > 0 && (
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/30">
+            ⚡ {totalXp} XP earned
+          </span>
+        )}
+      </div>
+
+      {isLoading ? (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {Array.from({ length: 3 }).map((_, i) => <Skeleton key={i} className="h-36 rounded-xl" />)}
+        </div>
+      ) : challenges.length === 0 ? (
+        <div className="card-glass p-6 text-center">
+          <p className="text-sm text-muted-foreground mb-3">No active challenges. Generate new ones to earn XP!</p>
+          <Button size="sm" onClick={handleGenerate} disabled={generate.isPending} className="gap-1.5">
+            {generate.isPending ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />Generating…</> : <><Zap className="w-3.5 h-3.5" />Generate Challenges</>}
+          </Button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          {challenges.map(c => {
+            const style = difficultyStyle(c.difficulty);
+            return (
+              <div key={c.id} className={cn("card-glass p-4 border-l-2 flex flex-col gap-2", style.border)}>
+                <div className="flex items-start justify-between gap-2">
+                  <p className="text-sm font-semibold leading-snug flex-1">{c.title}</p>
+                  <span className={cn("text-[10px] font-medium px-1.5 py-0.5 rounded-full capitalize shrink-0", style.badge)}>{c.difficulty}</span>
+                </div>
+                <p className="text-xs text-muted-foreground leading-relaxed">{c.description}</p>
+                {c.targetAmount != null && (
+                  <p className="text-xs font-medium text-amber-400">Target: KES {c.targetAmount.toLocaleString("en-KE")}</p>
+                )}
+                <div className="flex items-center justify-between mt-auto pt-1">
+                  <div className="flex flex-col gap-0.5">
+                    <span className="text-[10px] text-amber-400 font-semibold">+{c.xpReward} XP</span>
+                    <span className="text-[10px] text-muted-foreground">{timeLeft(c.expiresAt)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <Button size="sm" className="h-7 text-xs px-2.5 bg-emerald-600 hover:bg-emerald-700 text-white" onClick={() => handleComplete(c.id)} disabled={complete.isPending}>
+                      Done ✓
+                    </Button>
+                    <Button size="sm" variant="ghost" className="h-7 text-xs px-2.5 text-muted-foreground" onClick={() => handleDismiss(c.id)} disabled={dismiss.isPending}>
+                      Skip
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+      {challenges.length > 0 && (
+        <div className="flex justify-end">
+          <Button variant="ghost" size="sm" className="text-xs text-muted-foreground gap-1" onClick={handleGenerate} disabled={generate.isPending}>
+            {generate.isPending ? <Loader2 className="w-3 h-3 animate-spin" /> : <Zap className="w-3 h-3" />}
+            Refresh challenges
+          </Button>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function KpiCard({
   title,
@@ -810,6 +930,9 @@ export default function Dashboard() {
           </div>
         </div>
       )}
+
+      {/* ── FINANCIAL CHALLENGES ── */}
+      <ChallengesWidget />
 
       {/* Quick Action Modal */}
       <Dialog open={quickOpen} onOpenChange={setQuickOpen}>
