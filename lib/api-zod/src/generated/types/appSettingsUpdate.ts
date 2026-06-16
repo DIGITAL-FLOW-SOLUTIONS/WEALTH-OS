@@ -11,5 +11,6 @@ export interface AppSettingsUpdate {
   currency?: string;
   theme?: AppSettingsUpdateTheme;
   emergencyFundMonths?: number;
+  emergencyFundMonthlyAmount?: number;
   usdConversionRate?: number;
 }

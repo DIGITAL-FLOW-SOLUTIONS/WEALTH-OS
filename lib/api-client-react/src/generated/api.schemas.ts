@@ -438,6 +438,7 @@ export interface AppSettings {
   currency: string;
   theme: AppSettingsTheme;
   emergencyFundMonths: number;
+  emergencyFundMonthlyAmount: number;
   usdConversionRate?: number;
 }
 
@@ -453,6 +454,7 @@ export interface AppSettingsUpdate {
   currency?: string;
   theme?: AppSettingsUpdateTheme;
   emergencyFundMonths?: number;
+  emergencyFundMonthlyAmount?: number;
   usdConversionRate?: number;
 }
 

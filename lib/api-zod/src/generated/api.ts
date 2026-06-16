@@ -481,6 +481,7 @@ export const GetSettingsResponse = zod.object({
   "currency": zod.string(),
   "theme": zod.enum(['dark', 'light']),
   "emergencyFundMonths": zod.number(),
+  "emergencyFundMonthlyAmount": zod.number(),
   "usdConversionRate": zod.number().optional()
 })
 
@@ -489,6 +490,7 @@ export const UpdateSettingsBody = zod.object({
   "currency": zod.string().optional(),
   "theme": zod.enum(['dark', 'light']).optional(),
   "emergencyFundMonths": zod.number().optional(),
+  "emergencyFundMonthlyAmount": zod.number().optional(),
   "usdConversionRate": zod.number().optional()
 })
 
@@ -497,6 +499,7 @@ export const UpdateSettingsResponse = zod.object({
   "currency": zod.string(),
   "theme": zod.enum(['dark', 'light']),
   "emergencyFundMonths": zod.number(),
+  "emergencyFundMonthlyAmount": zod.number(),
   "usdConversionRate": zod.number().optional()
 })
 

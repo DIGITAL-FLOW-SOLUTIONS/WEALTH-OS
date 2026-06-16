@@ -32,10 +32,13 @@ router.post("/goals", async (req, res): Promise<void> => {
   const parsed = CreateGoalBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
   const { targetAmount, currentAmount, ...rest } = parsed.data;
+  const newCurrentAmount = currentAmount ?? 0;
+  const autoComplete = newCurrentAmount >= targetAmount;
   const [row] = await db.insert(goalsTable).values({
     ...rest,
     targetAmount: String(targetAmount),
-    ...(currentAmount != null ? { currentAmount: String(currentAmount) } : {}),
+    currentAmount: String(newCurrentAmount),
+    ...(autoComplete ? { isCompleted: true } : {}),
     userId,
   }).returning();
   res.status(201).json(parseGoal(row));
@@ -47,12 +50,23 @@ router.patch("/goals/:id", async (req, res): Promise<void> => {
   if (!params.success) { res.status(400).json({ error: params.error.message }); return; }
   const parsed = UpdateGoalBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+
+  // Fetch existing row to enable auto-completion comparison
+  const [existing] = await db.select().from(goalsTable).where(and(eq(goalsTable.id, params.data.id), eq(goalsTable.userId, userId)));
+  if (!existing) { res.status(404).json({ error: "Goal not found" }); return; }
+
   const { targetAmount, currentAmount, ...rest } = parsed.data;
+  const newCurrentAmount = currentAmount ?? parseFloat(existing.currentAmount as string);
+  const newTargetAmount = targetAmount ?? parseFloat(existing.targetAmount as string);
+  const autoComplete = newCurrentAmount >= newTargetAmount;
+
   const setData = {
     ...rest,
     ...(targetAmount != null ? { targetAmount: String(targetAmount) } : {}),
     ...(currentAmount != null ? { currentAmount: String(currentAmount) } : {}),
+    ...(autoComplete ? { isCompleted: true } : {}),
   };
+
   const [row] = await db.update(goalsTable).set(setData).where(and(eq(goalsTable.id, params.data.id), eq(goalsTable.userId, userId))).returning();
   if (!row) { res.status(404).json({ error: "Goal not found" }); return; }
   res.json(UpdateGoalResponse.parse(parseGoal(row)));

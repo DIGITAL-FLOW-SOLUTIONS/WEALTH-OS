@@ -8,6 +8,7 @@ export const settingsTable = pgTable("app_settings", {
   currency: text("currency").notNull().default("KES"),
   theme: text("theme").notNull().default("dark"),
   emergencyFundMonths: numeric("emergency_fund_months", { precision: 5, scale: 1 }).notNull().default("6"),
+  emergencyFundMonthlyAmount: numeric("emergency_fund_monthly_amount", { precision: 14, scale: 2 }).notNull().default("0"),
   usdConversionRate: numeric("usd_conversion_rate", { precision: 10, scale: 4 }).notNull().default("130.0000"),
 });
 

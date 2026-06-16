@@ -1,6 +1,6 @@
 import { Router, type IRouter } from "express";
 import { and, eq, sql } from "drizzle-orm";
-import { db, transactionsTable, savingsTable, assetsTable, liabilitiesTable, investmentsTable } from "@workspace/db";
+import { db, transactionsTable, savingsTable, assetsTable, liabilitiesTable, investmentsTable, settingsTable } from "@workspace/db";
 import {
   GetDashboardSummaryResponse,
   GetCashflowTrendResponse,
@@ -109,16 +109,22 @@ async function getTotalSavings(userId: string): Promise<number> {
   return parseFloat(row?.total ?? "0");
 }
 
+async function getUserEmergencyMonthlyAmount(userId: string): Promise<number> {
+  const [row] = await db.select().from(settingsTable).where(eq(settingsTable.userId, userId)).limit(1);
+  return row ? parseFloat(row.emergencyFundMonthlyAmount as string) : 0;
+}
+
 router.get("/dashboard/summary", async (req, res): Promise<void> => {
   const userId = req.userId;
   const { month, year } = currentMonthYear();
   const prev = prevMonthYear();
 
   const [
-    monthlyIncome, monthlyExpenses, monthlySavings,
-    prevIncome, prevExpenses, prevSavings,
+    txIncome, monthlyExpenses, monthlySavings,
+    prevTxIncome, prevExpenses, prevSavings,
     totalAssets, totalLiabilities, investmentTotal,
     allSavings, openingBalance,
+    emergencyMonthlyAmount,
   ] = await Promise.all([
     getMonthSum(userId, "income", month, year),
     getMonthSum(userId, "expense", month, year),
@@ -131,17 +137,23 @@ router.get("/dashboard/summary", async (req, res): Promise<void> => {
     getTotalInvestments(userId),
     getTotalSavings(userId),
     getMonthOpeningBalance(userId, month, year),
+    getUserEmergencyMonthlyAmount(userId),
   ]);
 
+  // Monthly income includes savings entries (money saved is also money earned)
+  const monthlyIncome = txIncome + monthlySavings;
+  const prevIncome = prevTxIncome + prevSavings;
+
   const netWorth = totalAssets - totalLiabilities;
-  const netCashFlow = monthlyIncome + openingBalance - monthlyExpenses;
+  const netCashFlow = txIncome + openingBalance - monthlyExpenses;
   const savingsRate = monthlyIncome > 0 ? (monthlySavings / monthlyIncome) * 100 : 0;
 
-  let avgMonthlyExpenses = monthlyExpenses;
-  if (avgMonthlyExpenses === 0) avgMonthlyExpenses = prevExpenses;
-  if (avgMonthlyExpenses === 0) avgMonthlyExpenses = 1;
+  // Emergency fund: use the user-defined monthly amount if set, else fall back to actual expenses
+  let efDenominator = emergencyMonthlyAmount > 0 ? emergencyMonthlyAmount : monthlyExpenses;
+  if (efDenominator === 0) efDenominator = prevExpenses;
+  if (efDenominator === 0) efDenominator = 1;
+  const emergencyFundMonths = allSavings / efDenominator;
 
-  const emergencyFundMonths = allSavings / avgMonthlyExpenses;
   const totalBalance = allSavings;
 
   const summary = {

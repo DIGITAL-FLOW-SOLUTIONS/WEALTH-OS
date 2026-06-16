@@ -5,6 +5,7 @@ import { setActiveCurrency } from "@/lib/format";
 interface SettingsContextValue {
   currency: string;
   emergencyFundTarget: number;
+  emergencyFundMonthlyAmount: number;
   theme: string;
   isLoaded: boolean;
 }
@@ -12,6 +13,7 @@ interface SettingsContextValue {
 const SettingsContext = createContext<SettingsContextValue>({
   currency: "KES",
   emergencyFundTarget: 6,
+  emergencyFundMonthlyAmount: 0,
   theme: "dark",
   isLoaded: false,
 });
@@ -35,6 +37,7 @@ export function SettingsProvider({ children }: { children: ReactNode }) {
       value={{
         currency: settings?.currency ?? "KES",
         emergencyFundTarget: settings?.emergencyFundMonths ?? 6,
+        emergencyFundMonthlyAmount: settings?.emergencyFundMonthlyAmount ?? 0,
         theme: settings?.theme ?? "dark",
         isLoaded: !!settings,
       }}

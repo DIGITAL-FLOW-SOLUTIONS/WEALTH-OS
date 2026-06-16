@@ -13,6 +13,7 @@ function parseSettings(s: typeof settingsTable.$inferSelect) {
   return {
     ...s,
     emergencyFundMonths: parseFloat(s.emergencyFundMonths as string),
+    emergencyFundMonthlyAmount: parseFloat(s.emergencyFundMonthlyAmount as string),
     usdConversionRate: parseFloat(s.usdConversionRate as string),
   };
 }
@@ -37,10 +38,11 @@ router.patch("/settings", async (req, res): Promise<void> => {
   const parsed = UpdateSettingsBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
   const existing = await ensureSettings(userId);
-  const { emergencyFundMonths, usdConversionRate, ...rest } = parsed.data;
+  const { emergencyFundMonths, emergencyFundMonthlyAmount, usdConversionRate, ...rest } = parsed.data;
   const setData = {
     ...rest,
     ...(emergencyFundMonths != null ? { emergencyFundMonths: String(emergencyFundMonths) } : {}),
+    ...(emergencyFundMonthlyAmount != null ? { emergencyFundMonthlyAmount: String(emergencyFundMonthlyAmount) } : {}),
     ...(usdConversionRate != null ? { usdConversionRate: String(usdConversionRate) } : {}),
   };
   const [row] = await db.update(settingsTable).set(setData).where(eq(settingsTable.id, existing.id)).returning();

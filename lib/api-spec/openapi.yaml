@@ -1110,12 +1110,13 @@ components:
     # ─── SETTINGS ──────────────────────────────────────────────────────────────
     AppSettings:
       type: object
-      required: [id, currency, theme, emergencyFundMonths]
+      required: [id, currency, theme, emergencyFundMonths, emergencyFundMonthlyAmount]
       properties:
         id: { type: integer }
         currency: { type: string }
         theme: { type: string, enum: [dark, light] }
         emergencyFundMonths: { type: number }
+        emergencyFundMonthlyAmount: { type: number }
         usdConversionRate: { type: number }
 
     AppSettingsUpdate:
@@ -1124,6 +1125,7 @@ components:
         currency: { type: string }
         theme: { type: string, enum: [dark, light] }
         emergencyFundMonths: { type: number }
+        emergencyFundMonthlyAmount: { type: number }
         usdConversionRate: { type: number }
 
     # ─── DASHBOARD WOW SCHEMAS ─────────────────────────────────────────────────
