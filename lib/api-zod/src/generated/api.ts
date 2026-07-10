@@ -627,7 +627,8 @@ export const ListReportsResponseItem = zod.object({
   "topExpenseCategory": zod.string(),
   "insights": zod.string().nullish(),
   "label": zod.string(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "openingBalance": zod.number()
 })
 export const ListReportsResponse = zod.array(ListReportsResponseItem)
 
@@ -653,7 +654,8 @@ export const GetMonthlyReportResponse = zod.object({
   "topExpenseCategory": zod.string(),
   "insights": zod.string().nullish(),
   "label": zod.string(),
-  "createdAt": zod.string()
+  "createdAt": zod.string(),
+  "openingBalance": zod.number()
 })
 
 

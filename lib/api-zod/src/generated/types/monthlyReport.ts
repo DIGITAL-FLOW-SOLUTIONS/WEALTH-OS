@@ -21,4 +21,5 @@ export interface MonthlyReport {
   insights?: string | null;
   label: string;
   createdAt: string;
+  openingBalance: number;
 }

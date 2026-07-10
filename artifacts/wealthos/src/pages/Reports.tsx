@@ -35,7 +35,7 @@ export default function Reports() {
   );
 
   if (selected && detail) {
-    const netCF = detail.totalIncome - detail.totalExpenses;
+    const netCF = detail.openingBalance + detail.totalIncome - detail.totalExpenses;
     const savingsRate = detail.totalIncome > 0 ? (detail.totalSavings / detail.totalIncome) * 100 : 0;
     return (
       <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-5">
@@ -62,6 +62,10 @@ export default function Reports() {
           <div className="card-glass p-3 text-center">
             <p className="text-xs text-muted-foreground">Net Cash Flow</p>
             <p className={cn("text-lg font-bold mt-1", netCF >= 0 ? "text-money-in" : "text-money-out")}>{netCF >= 0 ? "+" : ""}{formatCurrency(netCF)}</p>
+          </div>
+          <div className="card-glass p-3 text-center">
+            <p className="text-xs text-muted-foreground">Carry Forward</p>
+            <p className="text-lg font-bold text-purple-400 mt-1">{formatCurrency(detail.openingBalance)}</p>
           </div>
           <div className="card-glass p-3 text-center">
             <p className="text-xs text-muted-foreground">Savings</p>
@@ -110,6 +114,7 @@ export default function Reports() {
     income: r.totalIncome,
     expenses: r.totalExpenses,
     savings: r.totalSavings,
+    carryForward: r.openingBalance,
   }));
 
   return (
@@ -132,6 +137,7 @@ export default function Reports() {
               <Bar dataKey="income" fill="#22c55e" radius={[3, 3, 0, 0]} name="Income" />
               <Bar dataKey="expenses" fill="#ef4444" radius={[3, 3, 0, 0]} name="Expenses" />
               <Bar dataKey="savings" fill="#3b82f6" radius={[3, 3, 0, 0]} name="Savings" />
+              <Bar dataKey="carryForward" fill="#a855f7" radius={[3, 3, 0, 0]} name="Carry Forward" />
             </BarChart>
           </ResponsiveContainer>
         </div>

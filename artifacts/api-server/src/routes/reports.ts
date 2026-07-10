@@ -9,6 +9,24 @@ import {
 
 const router: IRouter = Router();
 
+const CARRY_CATEGORIES = ["carry_forward", "last_balance"] as const;
+
+async function getMonthOpeningBalance(userId: string, month: number, year: number): Promise<number> {
+  const [row] = await db
+    .select({ total: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)` })
+    .from(transactionsTable)
+    .where(
+      and(
+        eq(transactionsTable.userId, userId),
+        eq(transactionsTable.type, "income"),
+        sql`${transactionsTable.category} IN (${sql.join(CARRY_CATEGORIES.map(c => sql`${c}`), sql`, `)})`,
+        sql`EXTRACT(MONTH FROM ${transactionsTable.date}::date) = ${month}`,
+        sql`EXTRACT(YEAR FROM ${transactionsTable.date}::date) = ${year}`
+      )
+    );
+  return parseFloat(row?.total ?? "0");
+}
+
 async function buildReport(userId: string, month: number, year: number) {
   const [incomeRow] = await db
     .select({ total: sql<string>`COALESCE(SUM(${transactionsTable.amount}), 0)` })
@@ -79,7 +97,10 @@ async function buildReport(userId: string, month: number, year: number) {
     .orderBy(sql`SUM(${transactionsTable.amount}) DESC`)
     .limit(1);
 
-  const totalIncome = parseFloat(incomeRow?.total ?? "0");
+  const openingBalance = await getMonthOpeningBalance(userId, month, year);
+
+  const txIncome = parseFloat(incomeRow?.total ?? "0");
+  const totalIncome = txIncome + openingBalance;
   const totalExpenses = parseFloat(expenseRow?.total ?? "0");
   const totalSavings = parseFloat(savingsRow?.total ?? "0");
   const totalAssets = parseFloat(assetsRow?.total ?? "0");
@@ -88,7 +109,7 @@ async function buildReport(userId: string, month: number, year: number) {
   const netWorth = totalAssets - totalLiabilities;
 
   const savingsRate = totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0;
-  const netCF = totalIncome - totalExpenses;
+  const netCF = txIncome + openingBalance - totalExpenses;
   const emergencyMonths = totalSavings / (totalExpenses > 0 ? totalExpenses : 1);
   const debtRatio = totalAssets > 0 ? totalLiabilities / totalAssets : 1;
   const scoreRaw =
@@ -117,6 +138,7 @@ async function buildReport(userId: string, month: number, year: number) {
     insights: `Net cashflow: KES ${netCF.toLocaleString("en-KE")}. Savings rate: ${savingsRate.toFixed(1)}%.`,
     label,
     createdAt: new Date().toISOString(),
+    openingBalance,
   };
 }
 

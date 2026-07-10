@@ -1209,7 +1209,7 @@ components:
     # ─── MONTHLY REPORT ────────────────────────────────────────────────────────
     MonthlyReport:
       type: object
-      required: [id, month, year, totalIncome, totalExpenses, totalSavings, netWorth, healthScore, topExpenseCategory, label, createdAt]
+      required: [id, month, year, totalIncome, totalExpenses, totalSavings, netWorth, healthScore, topExpenseCategory, label, createdAt, openingBalance]
       properties:
         id: { type: integer }
         month: { type: integer }
@@ -1224,6 +1224,7 @@ components:
         insights: { type: ["string", "null"] }
         label: { type: string }
         createdAt: { type: string }
+        openingBalance: { type: number }
 
     # ─── CHALLENGE ─────────────────────────────────────────────────────────────
     Challenge:
