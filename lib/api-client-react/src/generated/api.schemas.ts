@@ -571,6 +571,13 @@ export interface MonthlyReport {
   label: string;
   createdAt: string;
   openingBalance: number;
+  spendingBreakdown?: CategorySpend[];
+  incomeBreakdown?: CategorySpend[];
+  incomeTransactions?: Transaction[];
+  expenseTransactions?: Transaction[];
+  savingsRecords?: SavingsRecord[];
+  goalsRecords?: Goal[];
+  monthlyInsights?: FinancialInsight[];
 }
 
 export interface Challenge {

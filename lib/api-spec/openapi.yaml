@@ -1225,6 +1225,27 @@ components:
         label: { type: string }
         createdAt: { type: string }
         openingBalance: { type: number }
+        spendingBreakdown:
+          type: array
+          items: { $ref: "#/components/schemas/CategorySpend" }
+        incomeBreakdown:
+          type: array
+          items: { $ref: "#/components/schemas/CategorySpend" }
+        incomeTransactions:
+          type: array
+          items: { $ref: "#/components/schemas/Transaction" }
+        expenseTransactions:
+          type: array
+          items: { $ref: "#/components/schemas/Transaction" }
+        savingsRecords:
+          type: array
+          items: { $ref: "#/components/schemas/SavingsRecord" }
+        goalsRecords:
+          type: array
+          items: { $ref: "#/components/schemas/Goal" }
+        monthlyInsights:
+          type: array
+          items: { $ref: "#/components/schemas/FinancialInsight" }
 
     # ─── CHALLENGE ─────────────────────────────────────────────────────────────
     Challenge:

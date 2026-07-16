@@ -628,7 +628,68 @@ export const ListReportsResponseItem = zod.object({
   "insights": zod.string().nullish(),
   "label": zod.string(),
   "createdAt": zod.string(),
-  "openingBalance": zod.number()
+  "openingBalance": zod.number(),
+  "spendingBreakdown": zod.array(zod.object({
+  "category": zod.string(),
+  "amount": zod.number(),
+  "percentage": zod.number()
+})).optional(),
+  "incomeBreakdown": zod.array(zod.object({
+  "category": zod.string(),
+  "amount": zod.number(),
+  "percentage": zod.number()
+})).optional(),
+  "incomeTransactions": zod.array(zod.object({
+  "id": zod.number(),
+  "type": zod.enum(['income', 'expense']),
+  "amount": zod.number(),
+  "category": zod.string(),
+  "source": zod.string().nullish(),
+  "date": zod.string(),
+  "notes": zod.string().nullish(),
+  "paymentMethod": zod.string().nullish(),
+  "isRecurring": zod.boolean().optional(),
+  "createdAt": zod.string()
+})).optional(),
+  "expenseTransactions": zod.array(zod.object({
+  "id": zod.number(),
+  "type": zod.enum(['income', 'expense']),
+  "amount": zod.number(),
+  "category": zod.string(),
+  "source": zod.string().nullish(),
+  "date": zod.string(),
+  "notes": zod.string().nullish(),
+  "paymentMethod": zod.string().nullish(),
+  "isRecurring": zod.boolean().optional(),
+  "createdAt": zod.string()
+})).optional(),
+  "savingsRecords": zod.array(zod.object({
+  "id": zod.number(),
+  "amount": zod.number(),
+  "account": zod.string(),
+  "date": zod.string(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
+  "goalsRecords": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "targetAmount": zod.number(),
+  "currentAmount": zod.number(),
+  "deadline": zod.string().nullish(),
+  "priority": zod.enum(['low', 'medium', 'high', 'critical']),
+  "notes": zod.string().nullish(),
+  "isCompleted": zod.boolean().optional(),
+  "createdAt": zod.string()
+})).optional(),
+  "monthlyInsights": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['warning', 'info', 'success', 'tip']),
+  "message": zod.string(),
+  "severity": zod.enum(['low', 'medium', 'high']),
+  "category": zod.string().nullish(),
+  "changePercent": zod.number().nullish()
+})).optional()
 })
 export const ListReportsResponse = zod.array(ListReportsResponseItem)
 
@@ -655,7 +716,68 @@ export const GetMonthlyReportResponse = zod.object({
   "insights": zod.string().nullish(),
   "label": zod.string(),
   "createdAt": zod.string(),
-  "openingBalance": zod.number()
+  "openingBalance": zod.number(),
+  "spendingBreakdown": zod.array(zod.object({
+  "category": zod.string(),
+  "amount": zod.number(),
+  "percentage": zod.number()
+})).optional(),
+  "incomeBreakdown": zod.array(zod.object({
+  "category": zod.string(),
+  "amount": zod.number(),
+  "percentage": zod.number()
+})).optional(),
+  "incomeTransactions": zod.array(zod.object({
+  "id": zod.number(),
+  "type": zod.enum(['income', 'expense']),
+  "amount": zod.number(),
+  "category": zod.string(),
+  "source": zod.string().nullish(),
+  "date": zod.string(),
+  "notes": zod.string().nullish(),
+  "paymentMethod": zod.string().nullish(),
+  "isRecurring": zod.boolean().optional(),
+  "createdAt": zod.string()
+})).optional(),
+  "expenseTransactions": zod.array(zod.object({
+  "id": zod.number(),
+  "type": zod.enum(['income', 'expense']),
+  "amount": zod.number(),
+  "category": zod.string(),
+  "source": zod.string().nullish(),
+  "date": zod.string(),
+  "notes": zod.string().nullish(),
+  "paymentMethod": zod.string().nullish(),
+  "isRecurring": zod.boolean().optional(),
+  "createdAt": zod.string()
+})).optional(),
+  "savingsRecords": zod.array(zod.object({
+  "id": zod.number(),
+  "amount": zod.number(),
+  "account": zod.string(),
+  "date": zod.string(),
+  "notes": zod.string().nullish(),
+  "createdAt": zod.string()
+})).optional(),
+  "goalsRecords": zod.array(zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "targetAmount": zod.number(),
+  "currentAmount": zod.number(),
+  "deadline": zod.string().nullish(),
+  "priority": zod.enum(['low', 'medium', 'high', 'critical']),
+  "notes": zod.string().nullish(),
+  "isCompleted": zod.boolean().optional(),
+  "createdAt": zod.string()
+})).optional(),
+  "monthlyInsights": zod.array(zod.object({
+  "id": zod.string(),
+  "type": zod.enum(['warning', 'info', 'success', 'tip']),
+  "message": zod.string(),
+  "severity": zod.enum(['low', 'medium', 'high']),
+  "category": zod.string().nullish(),
+  "changePercent": zod.number().nullish()
+})).optional()
 })
 
 

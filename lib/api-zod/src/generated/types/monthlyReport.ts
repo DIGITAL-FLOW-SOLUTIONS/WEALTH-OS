@@ -5,6 +5,11 @@
  * WealthOS Personal Finance Dashboard API
  * OpenAPI spec version: 0.1.0
  */
+import type { CategorySpend } from './categorySpend';
+import type { FinancialInsight } from './financialInsight';
+import type { Goal } from './goal';
+import type { SavingsRecord } from './savingsRecord';
+import type { Transaction } from './transaction';
 
 export interface MonthlyReport {
   id: number;
@@ -22,4 +27,11 @@ export interface MonthlyReport {
   label: string;
   createdAt: string;
   openingBalance: number;
+  spendingBreakdown?: CategorySpend[];
+  incomeBreakdown?: CategorySpend[];
+  incomeTransactions?: Transaction[];
+  expenseTransactions?: Transaction[];
+  savingsRecords?: SavingsRecord[];
+  goalsRecords?: Goal[];
+  monthlyInsights?: FinancialInsight[];
 }

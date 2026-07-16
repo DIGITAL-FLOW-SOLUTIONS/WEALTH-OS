@@ -1,14 +1,26 @@
 import { useState } from "react";
 import { useListReports, useGetMonthlyReport } from "@workspace/api-client-react";
-import { formatCurrency } from "@/lib/format";
+import type { MonthlyReport } from "@workspace/api-client-react";
+import { formatCurrency, formatPercent } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
   BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  PieChart, Pie, Cell,
 } from "recharts";
-import { TrendingUp, TrendingDown, ChevronLeft, FileText } from "lucide-react";
+import {
+  TrendingUp, TrendingDown, ChevronLeft, FileText,
+  ArrowDown, ArrowUp, ArrowLeftRight,
+  Wallet, Target, PiggyBank, Lightbulb,
+  CheckCircle2, AlertTriangle, Info,
+} from "lucide-react";
+
+const COLORS = [
+  "#22c55e", "#3b82f6", "#f59e0b", "#a855f7", "#ef4444",
+  "#06b6d4", "#f97316", "#ec4899", "#84cc16", "#6366f1",
+];
 
 const healthColor = (score: number) => {
   if (score >= 80) return "text-emerald-400";
@@ -25,6 +37,263 @@ const healthLabel = (score: number) => {
   if (score >= 20) return "Risky";
   return "Critical";
 };
+
+const insightIcon = (type: string) => {
+  if (type === "success")
+    return <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0" />;
+  if (type === "warning")
+    return <AlertTriangle className="w-4 h-4 text-amber-500 shrink-0" />;
+  if (type === "tip")
+    return <Lightbulb className="w-4 h-4 text-blue-500 shrink-0" />;
+  return <Info className="w-4 h-4 text-blue-400 shrink-0" />;
+};
+
+function SpendingBreakdownCard({ data }: { data: Array<{ category: string; amount: number; percentage: number }> }) {
+  if (data.length === 0) {
+    return (
+      <div className="card-glass p-5">
+        <h2 className="text-sm font-semibold mb-3">Spending Breakdown</h2>
+        <p className="text-sm text-muted-foreground">No expenses recorded this month.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="card-glass p-5">
+      <h2 className="text-sm font-semibold mb-3">Spending Breakdown</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="w-full max-w-[200px] mx-auto">
+          <ResponsiveContainer width="100%" height={180}>
+            <PieChart>
+              <Pie
+                data={data}
+                dataKey="amount"
+                nameKey="category"
+                cx="50%"
+                cy="50%"
+                innerRadius={45}
+                outerRadius={70}
+                stroke="none"
+                paddingAngle={2}
+              >
+                {data.map((_, i) => (
+                  <Cell key={i} fill={COLORS[i % COLORS.length]} />
+                ))}
+              </Pie>
+              <Tooltip
+                contentStyle={{ background: "hsl(220 16% 10%)", border: "1px solid hsl(217 24% 16%)", borderRadius: "8px", fontSize: 12 }}
+                formatter={(v: number) => [formatCurrency(v), ""]}
+              />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+        <div className="space-y-2">
+          {data.map((s, i) => (
+            <div key={s.category} className="flex items-center justify-between text-sm">
+              <div className="flex items-center gap-2">
+                <span className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
+                <span className="capitalize text-muted-foreground">{s.category}</span>
+              </div>
+              <div className="text-right">
+                <span className="font-medium tabular-nums">{formatCurrency(s.amount)}</span>
+                <span className="text-xs text-muted-foreground ml-1.5">({s.percentage.toFixed(1)}%)</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function IncomeSourcesCard({ data }: { data: Array<{ category: string; amount: number; percentage: number }> }) {
+  if (data.length === 0) {
+    return (
+      <div className="card-glass p-5">
+        <h2 className="text-sm font-semibold mb-3">Income Sources</h2>
+        <p className="text-sm text-muted-foreground">No income transactions this month.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="card-glass p-5">
+      <h2 className="text-sm font-semibold mb-3">Income Sources</h2>
+      <div className="flex flex-wrap gap-2">
+        {data.map((s, i) => (
+          <div key={s.category} className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-muted/40 border border-border">
+            <span className="w-2 h-2 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
+            <span className="text-xs capitalize">{s.category}</span>
+            <span className="text-xs font-medium text-money-in ml-1">{formatCurrency(s.amount)}</span>
+            <span className="text-xs text-muted-foreground">({s.percentage.toFixed(0)}%)</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ExpenseSourcesCard({ data }: { data: Array<{ category: string; amount: number; percentage: number }> }) {
+  if (data.length === 0) {
+    return (
+      <div className="card-glass p-5">
+        <h2 className="text-sm font-semibold mb-3">Expense Sources</h2>
+        <p className="text-sm text-muted-foreground">No expense transactions this month.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="card-glass p-5">
+      <h2 className="text-sm font-semibold mb-3">Expense Sources</h2>
+      <div className="space-y-2">
+        {data.map((s, i) => (
+          <div key={s.category} className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full" style={{ background: COLORS[i % COLORS.length] }} />
+              <span className="text-sm capitalize text-muted-foreground">{s.category}</span>
+            </div>
+            <div className="text-right">
+              <span className="text-sm font-medium tabular-nums text-money-out">{formatCurrency(s.amount)}</span>
+              <span className="text-xs text-muted-foreground ml-1.5">({s.percentage.toFixed(1)}%)</span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function TransactionRow({ tx }: { tx: { id: number; type: string; amount: number; category: string; source?: string | null; date: string; notes?: string | null } }) {
+  return (
+    <div className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/30 border border-border/60">
+      <div className={cn("w-7 h-7 rounded-full flex items-center justify-center shrink-0",
+        tx.type === "income" ? "bg-emerald-500/10 text-emerald-400" : "bg-rose-500/10 text-rose-400"
+      )}>
+        {tx.type === "income" ? <ArrowDown className="w-3.5 h-3.5" /> : <ArrowUp className="w-3.5 h-3.5" />}
+      </div>
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5">
+          <span className="text-sm font-medium capitalize truncate">{tx.category}</span>
+          {tx.source && <span className="text-xs text-muted-foreground">&bull; {tx.source}</span>}
+        </div>
+        {tx.notes && <p className="text-xs text-muted-foreground truncate">{tx.notes}</p>}
+      </div>
+      <div className="text-right shrink-0">
+        <p className={cn("text-sm font-medium tabular-nums", tx.type === "income" ? "text-money-in" : "text-money-out")}>
+          {tx.type === "income" ? "+" : "-"}{formatCurrency(tx.amount)}
+        </p>
+        <p className="text-[10px] text-muted-foreground">{new Date(tx.date).toLocaleDateString("en-KE", { day: "numeric", month: "short" })}</p>
+      </div>
+    </div>
+  );
+}
+
+function MonthTransactions({ detail }: { detail: MonthlyReport }) {
+  const monthName = new Date(detail.year, detail.month - 1, 1).toLocaleDateString("en-KE", { month: "long" }).toUpperCase();
+  const hasAny = (detail.incomeTransactions?.length ?? 0) > 0 || (detail.expenseTransactions?.length ?? 0) > 0 || (detail.savingsRecords?.length ?? 0) > 0 || (detail.goalsRecords?.length ?? 0) > 0;
+
+  if (!hasAny) {
+    return (
+      <div className="card-glass p-5">
+        <h2 className="text-sm font-semibold mb-3">{monthName} Transactions</h2>
+        <p className="text-sm text-muted-foreground">No transactions, savings, or goals recorded this month.</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="card-glass p-5 space-y-4">
+      <h2 className="text-sm font-semibold">{monthName} Transactions</h2>
+
+      {/* Income */}
+      {(detail.incomeTransactions?.length ?? 0) > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-xs font-medium text-money-in uppercase tracking-wider flex items-center gap-1.5">
+            <ArrowDown className="w-3.5 h-3.5" /> Income Transactions ({detail.incomeTransactions!.length})
+          </h3>
+          <div className="space-y-1.5">
+            {detail.incomeTransactions!.map(tx => <TransactionRow key={tx.id} tx={tx} />)}
+          </div>
+        </div>
+      )}
+
+      {/* Expenses */}
+      {(detail.expenseTransactions?.length ?? 0) > 0 && (
+        <div className="space-y-2">
+          <h3 className="text-xs font-medium text-money-out uppercase tracking-wider flex items-center gap-1.5">
+            <ArrowUp className="w-3.5 h-3.5" /> Expense Transactions ({detail.expenseTransactions!.length})
+          </h3>
+          <div className="space-y-1.5">
+            {detail.expenseTransactions!.map(tx => <TransactionRow key={tx.id} tx={tx} />)}
+          </div>
+        </div>
+      )}
+
+      {/* Savings & Goals */}
+      {((detail.savingsRecords?.length ?? 0) > 0 || (detail.goalsRecords?.length ?? 0) > 0) && (
+        <div className="space-y-2">
+          <h3 className="text-xs font-medium text-blue-400 uppercase tracking-wider flex items-center gap-1.5">
+            <PiggyBank className="w-3.5 h-3.5" /> Savings & Goals
+          </h3>
+          <div className="space-y-1.5">
+            {(detail.savingsRecords ?? []).map(s => (
+              <div key={s.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/30 border border-border/60">
+                <div className="w-7 h-7 rounded-full bg-blue-500/10 text-blue-400 flex items-center justify-center shrink-0">
+                  <Wallet className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{s.account}</p>
+                  {s.notes && <p className="text-xs text-muted-foreground truncate">{s.notes}</p>}
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-medium tabular-nums text-blue-400">+{formatCurrency(s.amount)}</p>
+                  <p className="text-[10px] text-muted-foreground">{new Date(s.date).toLocaleDateString("en-KE", { day: "numeric", month: "short" })}</p>
+                </div>
+              </div>
+            ))}
+            {(detail.goalsRecords ?? []).map(g => (
+              <div key={g.id} className="flex items-center gap-3 p-2.5 rounded-lg bg-muted/30 border border-border/60">
+                <div className="w-7 h-7 rounded-full bg-amber-500/10 text-amber-400 flex items-center justify-center shrink-0">
+                  <Target className="w-3.5 h-3.5" />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium">{g.name}</p>
+                  {g.notes && <p className="text-xs text-muted-foreground truncate">{g.notes}</p>}
+                </div>
+                <div className="text-right shrink-0">
+                  <p className="text-sm font-medium tabular-nums">{formatCurrency(g.currentAmount)} / {formatCurrency(g.targetAmount)}</p>
+                  <p className="text-[10px] text-muted-foreground">{g.priority} priority</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MonthlyInsights({ insights }: { insights: Array<{ id: string; type: string; message: string }> }) {
+  if (!insights || insights.length === 0) {
+    return (
+      <div className="card-glass p-5">
+        <h2 className="text-sm font-semibold mb-3">Monthly Insights</h2>
+        <p className="text-sm text-muted-foreground">Add more transactions to generate insights.</p>
+      </div>
+    );
+  }
+  return (
+    <div className="card-glass p-5">
+      <h2 className="text-sm font-semibold mb-3">Monthly Insights</h2>
+      <div className="space-y-2">
+        {insights.map(ins => (
+          <div key={ins.id} className="flex items-start gap-3 p-3 rounded-lg bg-muted/40 border border-border">
+            {insightIcon(ins.type)}
+            <p className="text-sm text-foreground/90 leading-snug">{ins.message}</p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function Reports() {
   const { data: reports, isLoading } = useListReports();
@@ -104,6 +373,21 @@ export default function Reports() {
             )}
           </div>
         </div>
+
+        {/* Spending Breakdown */}
+        <SpendingBreakdownCard data={detail.spendingBreakdown ?? []} />
+
+        {/* Income Sources */}
+        <IncomeSourcesCard data={detail.incomeBreakdown ?? []} />
+
+        {/* Expense Sources */}
+        <ExpenseSourcesCard data={detail.spendingBreakdown ?? []} />
+
+        {/* Month Transactions */}
+        <MonthTransactions detail={detail} />
+
+        {/* Monthly Insights */}
+        <MonthlyInsights insights={detail.monthlyInsights ?? []} />
       </div>
     );
   }
