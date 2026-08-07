@@ -26,6 +26,8 @@ import type {
   AssetInput,
   AssetUpdate,
   Budget,
+  BudgetDraft,
+  BudgetDraftInput,
   BudgetInput,
   BudgetUpdate,
   CarryForwardResult,
@@ -2119,6 +2121,77 @@ export const useCreateBudget = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getCreateBudgetMutationOptions(options));
+    }
+
+export const getCreateBudgetDraftUrl = () => {
+
+
+
+
+  return `/api/budgets/draft`
+}
+
+/**
+ * @summary Draft a monthly budget from essential spending history
+ */
+export const createBudgetDraft = async (budgetDraftInput: BudgetDraftInput, options?: RequestInit): Promise<BudgetDraft> => {
+
+  return customFetch<BudgetDraft>(getCreateBudgetDraftUrl(),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(
+      budgetDraftInput,)
+  }
+);}
+
+
+
+
+export const getCreateBudgetDraftMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBudgetDraft>>, TError,{data: BodyType<BudgetDraftInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createBudgetDraft>>, TError,{data: BodyType<BudgetDraftInput>}, TContext> => {
+
+const mutationKey = ['createBudgetDraft'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createBudgetDraft>>, {data: BodyType<BudgetDraftInput>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  createBudgetDraft(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateBudgetDraftMutationResult = NonNullable<Awaited<ReturnType<typeof createBudgetDraft>>>
+    export type CreateBudgetDraftMutationBody = BodyType<BudgetDraftInput>
+    export type CreateBudgetDraftMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Draft a monthly budget from essential spending history
+ */
+export const useCreateBudgetDraft = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createBudgetDraft>>, TError,{data: BodyType<BudgetDraftInput>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createBudgetDraft>>,
+        TError,
+        {data: BodyType<BudgetDraftInput>},
+        TContext
+      > => {
+      return useMutation(getCreateBudgetDraftMutationOptions(options));
     }
 
 export const getUpdateBudgetUrl = (id: number,) => {

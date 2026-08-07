@@ -425,6 +425,48 @@ export interface BudgetUpdate {
   year?: number;
 }
 
+export interface BudgetDraftInput {
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  month: number;
+  /**
+     * @minimum 2000
+     * @maximum 2100
+     */
+  year: number;
+  /** @minItems 1 */
+  essentialCategories: string[];
+}
+
+export interface BudgetDraftItem {
+  category: string;
+  suggestedLimit: number;
+  averageSpent: number;
+  latestSpent: number;
+  note: string;
+}
+
+export interface BudgetIdea {
+  name: string;
+  type: string;
+  suggestedAmount: number;
+  minimumAmount: number;
+  why: string;
+}
+
+export interface BudgetDraft {
+  month: number;
+  year: number;
+  lookbackMonths: number;
+  averageIncome: number;
+  essentialTotal: number;
+  items: BudgetDraftItem[];
+  ideas: BudgetIdea[];
+  message: string;
+}
+
 export type AppSettingsTheme = typeof AppSettingsTheme[keyof typeof AppSettingsTheme];
 
 

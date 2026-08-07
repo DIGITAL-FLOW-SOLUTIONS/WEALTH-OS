@@ -550,6 +550,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/Budget"
 
+  /budgets/draft:
+    post:
+      operationId: createBudgetDraft
+      tags: [budgets]
+      summary: Draft a monthly budget from essential spending history
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/BudgetDraftInput"
+      responses:
+        "200":
+          description: Suggested monthly budget
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BudgetDraft"
+
   /budgets/{id}:
     patch:
       operationId: updateBudget
@@ -1106,6 +1125,54 @@ components:
         limit: { type: number }
         month: { type: integer }
         year: { type: integer }
+
+    BudgetDraftInput:
+      type: object
+      required: [month, year, essentialCategories]
+      properties:
+        month: { type: integer, minimum: 1, maximum: 12 }
+        year: { type: integer, minimum: 2000, maximum: 2100 }
+        essentialCategories:
+          type: array
+          minItems: 1
+          items: { type: string }
+
+    BudgetDraftItem:
+      type: object
+      required: [category, suggestedLimit, averageSpent, latestSpent, note]
+      properties:
+        category: { type: string }
+        suggestedLimit: { type: number }
+        averageSpent: { type: number }
+        latestSpent: { type: number }
+        note: { type: string }
+
+    BudgetIdea:
+      type: object
+      required: [name, type, suggestedAmount, minimumAmount, why]
+      properties:
+        name: { type: string }
+        type: { type: string }
+        suggestedAmount: { type: number }
+        minimumAmount: { type: number }
+        why: { type: string }
+
+    BudgetDraft:
+      type: object
+      required: [month, year, lookbackMonths, averageIncome, essentialTotal, items, ideas, message]
+      properties:
+        month: { type: integer }
+        year: { type: integer }
+        lookbackMonths: { type: integer }
+        averageIncome: { type: number }
+        essentialTotal: { type: number }
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/BudgetDraftItem" }
+        ideas:
+          type: array
+          items: { $ref: "#/components/schemas/BudgetIdea" }
+        message: { type: string }
 
     # ─── SETTINGS ──────────────────────────────────────────────────────────────
     AppSettings:

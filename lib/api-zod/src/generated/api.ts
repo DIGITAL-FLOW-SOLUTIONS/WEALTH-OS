@@ -446,6 +446,47 @@ export const CreateBudgetBody = zod.object({
 })
 
 
+/**
+ * @summary Draft a monthly budget from essential spending history
+ */
+export const createBudgetDraftBodyMonthMax = 12;
+
+export const createBudgetDraftBodyYearMin = 2000;
+export const createBudgetDraftBodyYearMax = 2100;
+
+
+
+
+export const CreateBudgetDraftBody = zod.object({
+  "month": zod.number().min(1).max(createBudgetDraftBodyMonthMax),
+  "year": zod.number().min(createBudgetDraftBodyYearMin).max(createBudgetDraftBodyYearMax),
+  "essentialCategories": zod.array(zod.string()).min(1)
+})
+
+export const CreateBudgetDraftResponse = zod.object({
+  "month": zod.number(),
+  "year": zod.number(),
+  "lookbackMonths": zod.number(),
+  "averageIncome": zod.number(),
+  "essentialTotal": zod.number(),
+  "items": zod.array(zod.object({
+  "category": zod.string(),
+  "suggestedLimit": zod.number(),
+  "averageSpent": zod.number(),
+  "latestSpent": zod.number(),
+  "note": zod.string()
+})),
+  "ideas": zod.array(zod.object({
+  "name": zod.string(),
+  "type": zod.string(),
+  "suggestedAmount": zod.number(),
+  "minimumAmount": zod.number(),
+  "why": zod.string()
+})),
+  "message": zod.string()
+})
+
+
 export const UpdateBudgetParams = zod.object({
   "id": zod.coerce.number()
 })
