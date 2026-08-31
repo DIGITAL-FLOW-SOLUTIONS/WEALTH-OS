@@ -5,13 +5,15 @@ import {
   useCreateBudgetDraft,
   useDeleteBudget,
   useListBudgets,
+  useListTransactions,
   useUpdateBudget,
   type Budget,
   type BudgetDraft,
+  type Transaction,
 } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
-import { AlertCircle, ArrowRight, Check, CheckCircle2, ChevronDown, CircleDollarSign, Edit3, Lightbulb, Loader2, Plus, RefreshCw, Sparkles, Trash2, TrendingUp, WalletCards, X } from "lucide-react";
-import { formatCurrency, monthLabel } from "@/lib/format";
+import { AlertCircle, ArrowRight, CalendarDays, Check, CheckCircle2, ChevronDown, CircleDollarSign, Edit3, Lightbulb, Loader2, Plus, ReceiptText, RefreshCw, Sparkles, Trash2, TrendingUp, WalletCards, X } from "lucide-react";
+import { formatCurrency, formatDate, monthLabel } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -59,14 +61,23 @@ export default function Budget() {
 
   const listParams = useMemo(() => ({ month: String(selectedMonth), year: String(selectedYear) }), [selectedMonth, selectedYear]);
   const { data: budgets, isLoading, isError, refetch } = useListBudgets(listParams);
+  const { data: expenses, isLoading: isExpensesLoading, isError: isExpensesError, refetch: refetchExpenses } = useListTransactions({
+    type: "expense",
+    month: String(selectedMonth),
+    year: String(selectedYear),
+  });
   const createBudget = useCreateBudget();
   const updateBudget = useUpdateBudget();
   const deleteBudget = useDeleteBudget();
   const createDraft = useCreateBudgetDraft();
 
   const rows = budgets ?? [];
+  const expenseRows = expenses ?? [];
+  const plannedCategories = new Set(rows.map((budget) => budget.category));
+  const plannedExpenses = expenseRows.filter((expense) => plannedCategories.has(expense.category));
+  const unbudgetedExpenses = expenseRows.filter((expense) => !plannedCategories.has(expense.category));
   const totalBudget = rows.reduce((sum, budget) => sum + Number(budget.limit || 0), 0);
-  const totalSpent = rows.reduce((sum, budget) => sum + Number(budget.spent || 0), 0);
+  const totalSpent = expenseRows.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
   const remaining = totalBudget - totalSpent;
   const onTrackCount = rows.filter((budget) => budget.spent <= budget.limit).length;
 
@@ -213,8 +224,8 @@ export default function Budget() {
 
         <section className="grid gap-3 sm:grid-cols-3" data-testid="section-budget-summary">
           <SummaryCard label="Planned" value={formatCurrency(totalBudget)} detail={`${rows.length} budget ${rows.length === 1 ? "line" : "lines"}`} icon={<WalletCards className="size-4" />} tone="primary" />
-          <SummaryCard label="Spent so far" value={formatCurrency(totalSpent)} detail={rows.length ? `${onTrackCount} lines on track` : "Nothing recorded yet"} icon={<TrendingUp className="size-4" />} tone={totalSpent > totalBudget && totalBudget > 0 ? "danger" : "gold"} />
-          <SummaryCard label="Still available" value={formatCurrency(remaining)} detail={remaining >= 0 ? "Room left in this plan" : `${formatCurrency(Math.abs(remaining))} over plan`} icon={<CheckCircle2 className="size-4" />} tone={remaining >= 0 ? "primary" : "danger"} />
+          <SummaryCard label="Spent so far" value={formatCurrency(totalSpent)} detail={rows.length ? `${onTrackCount} lines on track` : totalSpent > 0 ? "No budget lines for these expenses" : "Nothing recorded yet"} icon={<TrendingUp className="size-4" />} tone={totalSpent > totalBudget ? "danger" : "gold"} />
+          <SummaryCard label="Still available" value={formatCurrency(remaining)} detail={totalBudget === 0 ? totalSpent > 0 ? "Add a plan to track this spending" : "Create a plan first" : remaining >= 0 ? "Room left in this plan" : `${formatCurrency(Math.abs(remaining))} over plan`} icon={<CheckCircle2 className="size-4" />} tone={remaining >= 0 ? "primary" : "danger"} />
         </section>
 
         <section className="grid gap-5 lg:grid-cols-[minmax(0,1.3fr)_minmax(300px,.7fr)]">
@@ -288,6 +299,14 @@ export default function Budget() {
           </aside>
         </section>
 
+        <ExpenseActivity
+          plannedExpenses={plannedExpenses}
+          unbudgetedExpenses={unbudgetedExpenses}
+          isLoading={isExpensesLoading}
+          isError={isExpensesError}
+          onRetry={() => void refetchExpenses()}
+        />
+
         {draft && !isDraftOpen && (
           <button type="button" onClick={() => setIsDraftOpen(true)} className="flex w-full items-center justify-between rounded-2xl border border-gold/30 bg-[hsl(43_96%_56%/.08)] p-4 text-left transition-colors hover:bg-[hsl(43_96%_56%/.12)]" data-testid="button-reopen-draft">
             <span className="flex items-center gap-3"><Lightbulb className="size-5 text-gold" /><span><span className="block text-sm font-medium">Your latest suggested plan is ready</span><span className="block text-xs text-muted-foreground">Review {draft.items.length} lines and {draft.ideas.length} wealth ideas</span></span></span>
@@ -333,6 +352,115 @@ function BudgetRow({ budget, onEdit, onDelete }: { budget: Budget; onEdit: (budg
       <Progress value={percent} className={cn("mt-4 h-1.5 bg-muted", over ? "[&>div]:bg-destructive" : "[&>div]:bg-primary")} data-testid={`progress-budget-${budget.id}`} />
       <div className="mt-2 flex justify-between text-[11px] text-muted-foreground"><span>{over ? `${formatCurrency(spent - limit)} over plan` : `${formatCurrency(limit - spent)} left`}</span><span className={cn(over && "text-destructive")}>{Math.round(percent)}%</span></div>
     </article>
+  );
+}
+
+function ExpenseActivity({
+  plannedExpenses,
+  unbudgetedExpenses,
+  isLoading,
+  isError,
+  onRetry,
+}: {
+  plannedExpenses: Transaction[];
+  unbudgetedExpenses: Transaction[];
+  isLoading: boolean;
+  isError: boolean;
+  onRetry: () => void;
+}) {
+  const totalExpenses = plannedExpenses.length + unbudgetedExpenses.length;
+  return (
+    <section className="space-y-4" data-testid="section-expense-activity">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <p className="text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">Actual spending</p>
+          <h2 className="mt-1 text-xl font-semibold tracking-tight">Expenses this month</h2>
+        </div>
+        {!isLoading && !isError && <span className="text-xs text-muted-foreground">{totalExpenses} {totalExpenses === 1 ? "expense" : "expenses"} recorded</span>}
+      </div>
+
+      {isLoading ? (
+        <div className="grid gap-4 lg:grid-cols-2" data-testid="loading-expense-activity">
+          {[1, 2].map((item) => <Skeleton key={item} className="h-48 rounded-2xl" />)}
+        </div>
+      ) : isError ? (
+        <div className="rounded-2xl border border-destructive/30 bg-destructive/5 p-8 text-center" data-testid="error-expense-activity">
+          <AlertCircle className="mx-auto size-6 text-destructive" />
+          <p className="mt-3 text-sm font-medium">This month’s expenses could not load.</p>
+          <Button variant="outline" size="sm" className="mt-4 gap-2" onClick={onRetry} data-testid="button-retry-expenses"><RefreshCw className="size-3.5" /> Try again</Button>
+        </div>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-2">
+          <ExpenseGroup
+            title="Planned expenses"
+            description="Spending in categories you added to this month’s plan."
+            expenses={plannedExpenses}
+            tone="primary"
+            emptyText="No spending has matched a planned category yet."
+            testId="planned-expenses"
+          />
+          <ExpenseGroup
+            title="Not in your budget"
+            description="Expenses recorded this month without a matching budget line."
+            expenses={unbudgetedExpenses}
+            tone="warning"
+            emptyText="Great — every expense is currently covered by a budget line."
+            testId="unbudgeted-expenses"
+          />
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ExpenseGroup({
+  title,
+  description,
+  expenses,
+  tone,
+  emptyText,
+  testId,
+}: {
+  title: string;
+  description: string;
+  expenses: Transaction[];
+  tone: "primary" | "warning";
+  emptyText: string;
+  testId: string;
+}) {
+  const total = expenses.reduce((sum, expense) => sum + Number(expense.amount || 0), 0);
+  return (
+    <div className={cn("rounded-2xl border bg-card/60 p-4 shadow-sm sm:p-5", tone === "warning" ? "border-gold/30" : "border-border/80")} data-testid={`group-${testId}`}>
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className={cn("flex size-8 items-center justify-center rounded-lg", tone === "warning" ? "bg-gold/10 text-gold" : "bg-primary/10 text-primary")}><ReceiptText className="size-4" /></div>
+            <h3 className="text-sm font-semibold">{title}</h3>
+          </div>
+          <p className="mt-2 text-xs leading-5 text-muted-foreground">{description}</p>
+        </div>
+        <p className="shrink-0 text-sm font-semibold tabular-nums">{formatCurrency(total)}</p>
+      </div>
+      {expenses.length === 0 ? (
+        <p className="mt-5 rounded-xl border border-dashed border-border/70 bg-background/30 px-3 py-4 text-center text-xs leading-5 text-muted-foreground" data-testid={`empty-${testId}`}>{emptyText}</p>
+      ) : (
+        <div className="mt-4 divide-y divide-border/70" data-testid={`list-${testId}`}>
+          {expenses.map((expense) => (
+            <div key={expense.id} className="flex items-start justify-between gap-3 py-3 first:pt-0 last:pb-0" data-testid={`expense-${expense.id}`}>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-medium">{categoryLabel(expense.category)}</p>
+                <p className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
+                  <CalendarDays className="size-3 shrink-0" />
+                  {formatDate(expense.date)}
+                  {(expense.notes || expense.source) && <span className="truncate">· {expense.notes || expense.source}</span>}
+                </p>
+              </div>
+              <p className="shrink-0 text-sm font-semibold tabular-nums text-money-out">{formatCurrency(expense.amount)}</p>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
