@@ -126,7 +126,7 @@ async function buildReport(userId: string, month: number, year: number) {
   const openingBalance = await getMonthOpeningBalance(userId, month, year);
 
   // Carry Forward is an opening balance, not income earned during this month.
-  // Keep it separate so the report's Income and Net Cash Flow remain accurate.
+  // Keep it separate from Income; it is added to Net Cash Flow for cash available.
   const totalIncome = parseFloat(incomeRow?.total ?? "0");
   const totalExpenses = parseFloat(expenseRow?.total ?? "0");
   const totalSavings = parseFloat(savingsRow?.total ?? "0");
@@ -292,11 +292,12 @@ async function buildReport(userId: string, month: number, year: number) {
     changePercent: number | null;
   }>;
 
-  const netCF = totalIncome - totalExpenses;
+  const operatingNetCF = totalIncome - totalExpenses;
+  const netCF = operatingNetCF + openingBalance;
   const savingsRate = totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0;
 
-  if (totalExpenses > totalIncome) {
-    monthlyInsights.push({ id: "negative-cashflow", type: "warning", message: `Your expenses exceeded income by KES ${Math.abs(netCF).toLocaleString("en-KE")} in ${new Date(year, month - 1, 1).toLocaleDateString("en-KE", { month: "long" })}.`, severity: "high", category: null, changePercent: null });
+  if (operatingNetCF < 0) {
+    monthlyInsights.push({ id: "negative-cashflow", type: "warning", message: `Your expenses exceeded income by KES ${Math.abs(operatingNetCF).toLocaleString("en-KE")} in ${new Date(year, month - 1, 1).toLocaleDateString("en-KE", { month: "long" })}.`, severity: "high", category: null, changePercent: null });
   }
 
   if (savingsRate >= 20) {

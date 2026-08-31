@@ -304,7 +304,7 @@ export default function Reports() {
   );
 
   if (selected && detail) {
-    const netCF = detail.totalIncome - detail.totalExpenses;
+    const netCF = detail.totalIncome - detail.totalExpenses + detail.openingBalance;
     const savingsRate = detail.totalIncome > 0 ? (detail.totalSavings / detail.totalIncome) * 100 : 0;
     return (
       <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-5">
@@ -437,7 +437,7 @@ export default function Reports() {
             </div>
           ) : (
             [...(reports ?? [])].reverse().map(r => {
-              const netCF = r.totalIncome - r.totalExpenses;
+              const netCF = r.totalIncome - r.totalExpenses + r.openingBalance;
               const label = new Date(r.year, r.month - 1, 1).toLocaleDateString("en-KE", { month: "long", year: "numeric" });
               return (
                 <div key={r.id} data-testid={`card-report-${r.id}`}
