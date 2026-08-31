@@ -125,8 +125,9 @@ async function buildReport(userId: string, month: number, year: number) {
 
   const openingBalance = await getMonthOpeningBalance(userId, month, year);
 
-  const txIncome = parseFloat(incomeRow?.total ?? "0");
-  const totalIncome = txIncome + openingBalance;
+  // Carry Forward is an opening balance, not income earned during this month.
+  // Keep it separate so the report's Income and Net Cash Flow remain accurate.
+  const totalIncome = parseFloat(incomeRow?.total ?? "0");
   const totalExpenses = parseFloat(expenseRow?.total ?? "0");
   const totalSavings = parseFloat(savingsRow?.total ?? "0");
   const totalAssets = parseFloat(assetsRow?.total ?? "0");
@@ -180,7 +181,7 @@ async function buildReport(userId: string, month: number, year: number) {
   const incomeBreakdown = incomeCatRows.map((r) => ({
     category: r.category,
     amount: parseFloat(r.total ?? "0"),
-    percentage: txIncome > 0 ? (parseFloat(r.total ?? "0") / txIncome) * 100 : 0,
+    percentage: totalIncome > 0 ? (parseFloat(r.total ?? "0") / totalIncome) * 100 : 0,
   }));
 
   // ─── Transactions for the month ───
@@ -282,9 +283,6 @@ async function buildReport(userId: string, month: number, year: number) {
     })(),
   ]);
 
-  const prevOpeningBalance = await getMonthOpeningBalance(userId, prevMonth, prevYear);
-  const prevIncome = prevTxIncome + prevOpeningBalance;
-
   const monthlyInsights = [] as Array<{
     id: string;
     type: "warning" | "info" | "success" | "tip";
@@ -294,7 +292,7 @@ async function buildReport(userId: string, month: number, year: number) {
     changePercent: number | null;
   }>;
 
-  const netCF = txIncome + openingBalance - totalExpenses;
+  const netCF = totalIncome - totalExpenses;
   const savingsRate = totalIncome > 0 ? (totalSavings / totalIncome) * 100 : 0;
 
   if (totalExpenses > totalIncome) {

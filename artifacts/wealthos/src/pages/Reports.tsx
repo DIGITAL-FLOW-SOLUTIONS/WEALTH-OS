@@ -304,7 +304,7 @@ export default function Reports() {
   );
 
   if (selected && detail) {
-    const netCF = detail.openingBalance + detail.totalIncome - detail.totalExpenses;
+    const netCF = detail.totalIncome - detail.totalExpenses;
     const savingsRate = detail.totalIncome > 0 ? (detail.totalSavings / detail.totalIncome) * 100 : 0;
     return (
       <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-5">
