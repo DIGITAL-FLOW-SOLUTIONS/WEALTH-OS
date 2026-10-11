@@ -5,6 +5,11 @@ import { TrendingUp, Eye, EyeOff, AlertCircle, CheckCircle, Loader2 } from "luci
 
 type Mode = "login" | "signup";
 
+const friendlyAuthError = (message: string) =>
+  /failed to fetch|fetch failed|network/i.test(message)
+    ? "Could not reach the sign-in service. The Supabase project URL may be incorrect or unavailable."
+    : message;
+
 export default function Auth() {
   const { signIn, signUp } = useAuth();
   const [mode, setMode] = useState<Mode>("login");
@@ -31,24 +36,29 @@ export default function Auth() {
 
     setLoading(true);
 
-    if (mode === "login") {
-      const { error } = await signIn(email, password);
-      if (error) {
-        setError(error.includes("Invalid login") ? "Incorrect email or password." : error);
-      }
-    } else {
-      const { error, needsConfirmation } = await signUp(email, password);
-      if (error) {
-        setError(error);
-      } else if (needsConfirmation) {
-        setSuccess("Account created! Check your email to confirm, then sign in.");
-        setMode("login");
+    try {
+      if (mode === "login") {
+        const { error } = await signIn(email, password);
+        if (error) {
+          setError(error.includes("Invalid login") ? "Incorrect email or password." : friendlyAuthError(error));
+        }
       } else {
-        setSuccess("Account created and signed in successfully!");
+        const { error, needsConfirmation } = await signUp(email, password);
+        if (error) {
+          setError(friendlyAuthError(error));
+        } else if (needsConfirmation) {
+          setSuccess("Account created! Check your email to confirm, then sign in.");
+          setMode("login");
+        } else {
+          setSuccess("Account created and signed in successfully!");
+        }
       }
+    } catch (authError) {
+      const message = authError instanceof Error ? authError.message : "Authentication request failed.";
+      setError(friendlyAuthError(message));
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
